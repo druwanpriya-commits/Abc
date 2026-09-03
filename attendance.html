@@ -27,14 +27,21 @@
 </head>
 <body>
 
-    <!-- 1. QR පැමිණීම (උඩින්ම තබා ඇත) -->
+    <!-- 1. QR පැමිණීම -->
     <div class="container">
         <h2>📷 QR පැමිණීම</h2>
         <div id="reader"></div>
         <div id="status-box" style="margin-top:10px; text-align:center; display:none; padding:10px; border-radius:6px; background:#334155;"></div>
     </div>
 
-    <!-- 2. ආයතන කළමනාකරණය -->
+    <!-- 2. අතින් පැමිණීම සටහන් කිරීම (Manual Entry - New Feature) -->
+    <div class="container" style="border: 1px solid var(--primary);">
+        <h3>✍️ අතින් පැමිණීම සටහන් කිරීම (QR නැතිව)</h3>
+        <input type="text" id="manual-search-input" placeholder="ID අංකය හෝ නම ගහන්න..." onkeyup="searchStudentForManualAtt()">
+        <div id="manual-search-results" style="max-height: 150px; overflow-y: auto; margin-top: 5px;"></div>
+    </div>
+
+    <!-- 3. ආයතන කළමනාකරණය -->
     <div class="container">
         <h3>🏢 ආයතන කළමනාකරණය</h3>
         <input type="text" id="new-inst-name" placeholder="අලුත් ආයතනයේ නම">
@@ -45,7 +52,7 @@
         </div>
     </div>
 
-    <!-- 3. ළමයා එකතු කිරීම සහ QR සාදා ගැනීම -->
+    <!-- 4. ළමයා එකතු කිරීම සහ QR සාදා ගැනීම -->
     <div class="container">
         <h3>➕ ළමයා එකතු කිරීම</h3>
         <label>ආයතනය:</label>
@@ -67,7 +74,7 @@
         </div>
     </div>
 
-    <!-- 4. මුදල් ගෙවීම් (Fees Payment) -->
+    <!-- 5. මුදල් ගෙවීම් -->
     <div class="container">
         <h3>💰 මුදල් ගෙවීම් කළමනාකරණය</h3>
         <select id="pay-filter-inst" onchange="renderPaymentList()"></select>
@@ -83,7 +90,7 @@
         </div>
     </div>
 
-    <!-- 5. පන්ති උසස් කිරීම (Promotion) -->
+    <!-- 6. පන්ති උසස් කිරීම -->
     <div class="container">
         <h3>🎓 පන්ති උසස් කිරීම (Promotion)</h3>
         <label>සිට:</label>
@@ -93,7 +100,7 @@
         <button class="btn btn-warning" onclick="promoteStudents()">🚀 උසස් කරන්න</button>
     </div>
 
-    <!-- 6. පැමිණීම් ලැයිස්තුව සහ SMS -->
+    <!-- 7. පැමිණීම් ලැයිස්තුව -->
     <div class="container">
         <h3>📋 පැමිණීම් ලැයිස්තුව</h3>
         <select id="filter-att-inst" onchange="renderTable()"></select>
@@ -110,7 +117,7 @@
         </div>
     </div>
 
-    <!-- 7. දිනපතා / මාසික වාර්තා -->
+    <!-- 8. දිනපතා / මාසික වාර්තා -->
     <div class="container">
         <h3>📊 පැමිණීමේ වාර්තා</h3>
         <button class="btn" onclick="showDailyReport()">🗓️ අද දින වාර්තාව</button>
@@ -118,7 +125,7 @@
         <div id="report-view-box" style="margin-top:10px; padding:10px; background:#334155; border-radius:6px; display:none;"></div>
     </div>
 
-    <!-- 8. ළමුන් කළමනාකරණය -->
+    <!-- 9. ළමුන් කළමනාකරණය -->
     <div class="container">
         <h3>👨‍🎓 ළමුන් කළමනාකරණය</h3>
         <select id="filter-manage-inst" onchange="renderStudentList()"></select>
@@ -140,7 +147,6 @@
     let students = JSON.parse(localStorage.getItem('students')) || {};
     let attendance = JSON.parse(localStorage.getItem('attendance')) || [];
 
-    // Dropdowns Update කිරීම
     function populateInstitutes() {
         let options = institutes.map(i => `<option value="${i}">${i}</option>`).join('');
         document.getElementById('std-inst').innerHTML = options;
@@ -150,7 +156,6 @@
         document.getElementById('pay-filter-inst').innerHTML = options;
     }
 
-    // 1. ආයතන එකතු කිරීම / මැකීම
     function addInstitute() {
         let name = document.getElementById('new-inst-name').value.trim();
         if(!name) { alert("ආයතනයේ නම ඇතුළත් කරන්න."); return; }
@@ -175,7 +180,6 @@
         }
     }
 
-    // 2. ළමයින් ලියාපදිංචිය සහ QR
     function registerAndGenerateQR() {
         let id = document.getElementById('std-id').value.trim();
         let name = document.getElementById('std-name').value.trim();
@@ -196,18 +200,17 @@
         renderPaymentList();
     }
 
-    // 3. QR ස්කෑන් කිරීම සහ SMS යැවීම
-    function onScanSuccess(decodedText) {
-        let std = students[decodedText];
-        if(!std) { alert("නොදන්නා QR එකකි!"); return; }
+    // පැමිණීම සටහන් කිරීමේ පොදු Function එක
+    function processAttendance(studentId) {
+        let std = students[studentId];
+        if(!std) { alert("නොදන්නා ID එකකි!"); return; }
         let date = new Date().toLocaleDateString();
         let time = new Date().toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
         
-        if(!attendance.some(a => a.id === decodedText && a.date === date)) {
-            attendance.push({id: decodedText, name: std.name, phone: std.phone, time, date, grade: std.grade, inst: std.inst});
+        if(!attendance.some(a => a.id === studentId && a.date === date)) {
+            attendance.push({id: studentId, name: std.name, phone: std.phone, time, date, grade: std.grade, inst: std.inst});
             localStorage.setItem('attendance', JSON.stringify(attendance));
             
-            // ස්වයංක්‍රීය SMS යැවීම
             if(std.phone) {
                 window.location.href = `sms:${std.phone}?body=ඔබගේ දරුවා වන ${std.name} අද දින ${time} ට පන්තියට පැමිණියේය.`;
             }
@@ -221,9 +224,39 @@
         }
     }
 
+    // QR Scan success
+    function onScanSuccess(decodedText) {
+        processAttendance(decodedText);
+    }
+
     new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 }).render(onScanSuccess);
 
-    // 4. මුදල් ගෙවීම් පද්ධතිය (Payment Marker)
+    // අතින් Search කර පැමිණීම මාර්ක් කිරීම
+    function searchStudentForManualAtt() {
+        let query = document.getElementById('manual-search-input').value.toLowerCase().trim();
+        let resDiv = document.getElementById('manual-search-results');
+        resDiv.innerHTML = '';
+        if(!query) return;
+
+        Object.keys(students).forEach(id => {
+            let s = students[id];
+            if(id.toLowerCase().includes(query) || s.name.toLowerCase().includes(query)) {
+                resDiv.innerHTML += `
+                    <div style="background:#1e293b; padding:8px; margin-top:4px; border-radius:4px; display:flex; justify-between; align-items:center; border:1px solid #475569;">
+                        <div><b>${s.name}</b> (${id}) - <small>${s.grade}</small></div>
+                        <button class="btn btn-success" style="width:auto; padding:4px 8px; margin:0;" onclick="manualMark('${id}')">මාක් කරන්න</button>
+                    </div>
+                `;
+            }
+        });
+    }
+
+    function manualMark(id) {
+        processAttendance(id);
+        document.getElementById('manual-search-input').value = '';
+        document.getElementById('manual-search-results').innerHTML = '';
+    }
+
     function renderPaymentList() {
         let tbody = document.getElementById('payment-list-table'); tbody.innerHTML = '';
         let inst = document.getElementById('pay-filter-inst').value;
@@ -244,7 +277,6 @@
         renderPaymentList();
     }
 
-    // 5. පැමිණීම් ලැයිස්තුව පෙන්වීම
     function renderTable() {
         let tbody = document.getElementById('attendance-table'); tbody.innerHTML = '';
         let inst = document.getElementById('filter-att-inst').value;
@@ -255,7 +287,6 @@
         });
     }
 
-    // 6. Excel (CSV) ලබාගැනීම
     function exportToExcel() {
         if(attendance.length === 0) { alert("බාගත කිරීමට දත්ත නොමැත."); return; }
         let csv = "ID,නම,පන්තිය,ආයතනය,දිනය,වේලාව\n";
@@ -269,7 +300,6 @@
         link.click();
     }
 
-    // 7. දිනපතා සහ මාසික වාර්තා
     function showDailyReport() {
         let today = new Date().toLocaleDateString();
         let count = attendance.filter(a => a.date === today).length;
@@ -291,7 +321,6 @@
         box.innerHTML = `📅 <b>මෙම මාසයේ:</b> මුළු පැමිණීම් <b>${count}</b> කි.`;
     }
 
-    // 8. ළමුන් කළමනාකරණය / උසස් කිරීම
     function renderStudentList() {
         let tbody = document.getElementById('student-list-table'); tbody.innerHTML = '';
         let inst = document.getElementById('filter-manage-inst').value;
@@ -328,7 +357,6 @@
     function resetStudentForm() { location.reload(); }
     function downloadQR() { alert("QR එක Save කරගන්න"); resetStudentForm(); }
 
-    // පද්ධතිය මුලින්ම Run වීම
     populateInstitutes();
     renderTable();
     renderStudentList();
