@@ -10,6 +10,8 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- html2pdf.js for PDF Generation -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <!-- HTML5 QR Code Library -->
+    <script src="https://unpkg.com/html5-qrcode"></script>
 </head>
 <body class="bg-slate-100 text-slate-800 font-sans pb-12">
 
@@ -17,8 +19,8 @@
     <header class="bg-indigo-700 text-white py-6 shadow-md mb-8">
         <div class="max-w-6xl mx-auto px-4 flex justify-between items-center">
             <div>
-                <h1 class="text-2xl font-bold">ගණිතය ශිෂ්‍ය ප්‍රගති පාලන පද්ධතිය</h1>
-                <p class="text-indigo-200 text-sm">Mthematics Student Progress & Analytics System</p>
+                <h1 class="text-2xl font-bold">ආයතන ශිෂ්‍ය ප්‍රගති පාලන පද්ධතිය</h1>
+                <p class="text-indigo-200 text-sm">Multi-Institute Student Progress & Analytics System</p>
             </div>
             <button onclick="resetData()" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-xs">Reset All Data</button>
         </div>
@@ -96,13 +98,25 @@
                 </div>
             </div>
 
-            <!-- Quick ID/QR Search -->
+            <!-- Live Camera QR Scanner & Quick Search -->
             <div class="bg-white p-6 rounded-xl shadow">
-                <h2 class="text-lg font-bold mb-2 border-b pb-2 text-indigo-900">3. Quick Student Search (QR/ID)</h2>
-                <p class="text-xs text-slate-500 mb-3">Student ID එක Type කර හෝ Scan කර Profile එක එකවර Open කරගන්න.</p>
-                <div class="flex gap-2">
+                <h2 class="text-lg font-bold mb-2 border-b pb-2 text-indigo-900">3. Quick QR / ID Search</h2>
+                <p class="text-xs text-slate-500 mb-3">Camera එකෙන් QR Scan කර හෝ ID එක Type කර Profile එක ඉක්මනින් Open කරගන්න.</p>
+                
+                <!-- Live Camera Scan Section -->
+                <button onclick="startQRScanner()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-2 rounded text-sm font-semibold mb-3 flex justify-center items-center gap-2">
+                    📷 Scan QR via Camera
+                </button>
+                
+                <div id="qrScannerContainer" class="hidden mb-3 border-2 border-dashed border-emerald-500 p-2 rounded bg-slate-50 text-center">
+                    <div id="reader" class="w-full"></div>
+                    <button onclick="stopQRScanner()" class="mt-2 bg-red-500 text-white text-xs px-3 py-1 rounded">Camera Close කරන්න</button>
+                </div>
+
+                <!-- Manual ID Type Entry -->
+                <div class="flex gap-2 border-t pt-3">
                     <input type="text" id="qrInput" placeholder="Enter Student ID" class="w-full border p-2 rounded text-sm">
-                    <button onclick="searchByQR()" class="bg-slate-800 text-white px-4 py-2 rounded text-sm">Open</button>
+                    <button onclick="searchByQR()" class="bg-slate-800 text-white px-4 py-2 rounded text-sm font-semibold">Open</button>
                 </div>
             </div>
 
@@ -199,6 +213,7 @@
 
         let lineChartInstance = null;
         let barChartInstance = null;
+        let html5QrCode = null;
 
         window.onload = function() {
             refreshAllDropdowns();
@@ -216,17 +231,14 @@
             }
         }
 
-        // Get unique list of institutes
         function getUniqueInstitutes() {
             const insts = students.map(s => s.institute);
             return [...new Set(insts)].filter(Boolean);
         }
 
-        // Refresh all dropdown options globally
         function refreshAllDropdowns() {
             const institutes = getUniqueInstitutes();
 
-            // Marks Section Institute Dropdown
             const marksInstSelect = document.getElementById('marksInstSelect');
             const currentMarksInst = marksInstSelect.value;
             marksInstSelect.innerHTML = '<option value="">-- ආයතනය තෝරන්න --</option>';
@@ -236,7 +248,6 @@
             marksInstSelect.value = institutes.includes(currentMarksInst) ? currentMarksInst : '';
             updateMarksGradeDropdown();
 
-            // View Section Institute Dropdown
             const viewInstSelect = document.getElementById('filterViewInst');
             const currentViewInst = viewInstSelect.value;
             viewInstSelect.innerHTML = '<option value="">-- සියලු ආයතන --</option>';
@@ -275,7 +286,6 @@
             filterStudentsForView();
         }
 
-        // Add Student
         function addStudent() {
             let institute = document.getElementById('stuInstitute').value.trim();
             const grade = document.getElementById('stuGrade').value;
@@ -295,7 +305,6 @@
             alert(`${institute} ආයතනයේ ${grade} පන්තියට ශිෂ්‍යයා සාර්ථකව එකතු කළා!`);
         }
 
-        // Filter Students for Marks Entry
         function filterStudentsForMarks() {
             const selectedInst = document.getElementById('marksInstSelect').value;
             const selectedGrade = document.getElementById('marksGradeSelect').value;
@@ -311,7 +320,6 @@
             });
         }
 
-        // Filter Students for Dashboard View
         function filterStudentsForView() {
             const selectedInst = document.getElementById('filterViewInst').value;
             const selectedGrade = document.getElementById('filterViewGrade').value;
@@ -335,7 +343,6 @@
             return 'F';
         }
 
-        // Add Marks
         function addMarks() {
             const stuId = document.getElementById('marksStuSelect').value;
             const exam = document.getElementById('examName').value.trim();
@@ -360,23 +367,62 @@
             }
         }
 
-        // Quick Search via QR/ID
+        // Live Camera Scanner Controls
+        function startQRScanner() {
+            const container = document.getElementById('qrScannerContainer');
+            container.classList.remove('hidden');
+
+            if (!html5QrCode) {
+                html5QrCode = new Html5Qrcode("reader");
+            }
+
+            html5QrCode.start(
+                { facingMode: "environment" },
+                { fps: 10, qrbox: { width: 200, height: 200 } },
+                (decodedText) => {
+                    openStudentProfileById(decodedText);
+                    stopQRScanner();
+                },
+                (errorMessage) => {
+                    // Scanning...
+                }
+            ).catch(err => {
+                alert("කැමරාව Open කිරීමට නොහැකි විය. Permission ලබාදී ඇත්දැයි බලන්න.");
+                console.error(err);
+            });
+        }
+
+        function stopQRScanner() {
+            if (html5QrCode) {
+                html5QrCode.stop().then(() => {
+                    document.getElementById('qrScannerContainer').classList.add('hidden');
+                }).catch(err => console.error(err));
+            } else {
+                document.getElementById('qrScannerContainer').classList.add('hidden');
+            }
+        }
+
+        // Manual Search Function
         function searchByQR() {
             const q = document.getElementById('qrInput').value.trim();
-            const stu = students.find(s => s.id === q);
+            openStudentProfileById(q);
+        }
+
+        // Common Function to Open Student Profile
+        function openStudentProfileById(studentId) {
+            const stu = students.find(s => s.id === studentId);
             if(stu) {
                 document.getElementById('filterViewInst').value = stu.institute;
                 updateViewGradeDropdown();
                 document.getElementById('filterViewGrade').value = stu.grade;
                 filterStudentsForView();
-                document.getElementById('viewStuSelect').value = q;
+                document.getElementById('viewStuSelect').value = studentId;
                 loadStudentDashboard();
             } else {
-                alert("මෙම ID එක සහිත ශිෂ්‍යයෙකු හමු නොවීය!");
+                alert(`ID: "${studentId}" සහිත ශිෂ්‍යයෙකු පද්ධතියේ හමු නොවීය!`);
             }
         }
 
-        // Calculate Average for the same Exam within the same Institute and Grade
         function getClassAverage(examName, institute, grade) {
             const targetStudentIds = students.filter(s => s.institute === institute && s.grade === grade).map(s => s.id);
             const examScores = marksData.filter(m => m.exam === examName && targetStudentIds.includes(m.stuId)).map(m => m.score);
@@ -386,7 +432,6 @@
             return (sum / examScores.length).toFixed(1);
         }
 
-        // Load Analytics Dashboard
         function loadStudentDashboard() {
             const stuId = document.getElementById('viewStuSelect').value;
             const stu = students.find(s => s.id === stuId);
@@ -410,7 +455,6 @@
                 return;
             }
 
-            // Warning Alert Check (Last 2 fails)
             const recentFails = studentMarks.slice(-2).filter(m => m.score < 40).length;
             if(recentFails >= 2) {
                 document.getElementById('alertBox').classList.remove('hidden');
@@ -499,4 +543,3 @@
     </script>
 </body>
 </html>
->
