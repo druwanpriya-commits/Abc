@@ -4,8 +4,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ගණිතය විභාග ප්‍රතිඵල </title>
+    
+    <!-- Google Sinhala Font එක සම්බන්ධ කිරීම -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Sinhala:wght@400;600;700&display=swap" rel="stylesheet">
+
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #eef2f3; padding: 20px; margin: 0; }
+        body { 
+            /* Iskoola Pota සහ Google Noto Sans Sinhala Font එක යොදා ඇත */
+            font-family: 'Iskoola Pota', 'Noto Sans Sinhala', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: #eef2f3; 
+            padding: 20px; 
+            margin: 0; 
+        }
         .container { max-width: 450px; margin: 0 auto; display: flex; flex-direction: column; gap: 15px; }
         .card { background: #f0fdf4; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); text-align: center; }
         .teacher-photo { width: 110px; height: 110px; border-radius: 50%; object-fit: cover; border: 3px solid #007bff; margin-bottom: 8px; }
@@ -14,8 +26,8 @@
         .ad-text { color: #856404; font-size: 0.9rem; margin-top: 5px; }
         
         label { display: block; text-align: left; font-weight: bold; margin-top: 12px; color: #333; font-size: 0.88rem; }
-        select, input { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ccc; border-radius: 6px; font-size: 15px; box-sizing: border-box; }
-        button { padding: 12px; background: #27ae60; color: white; border: none; border-radius: 6px; font-size: 16px; cursor: pointer; width: 100%; margin-top: 18px; font-weight: bold; }
+        select, input { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ccc; border-radius: 6px; font-size: 15px; box-sizing: border-box; font-family: inherit; }
+        button { padding: 12px; background: #27ae60; color: white; border: none; border-radius: 6px; font-size: 16px; cursor: pointer; width: 100%; margin-top: 18px; font-weight: bold; font-family: inherit; }
         button:hover { background: #219150; }
         
         #result { margin-top: 15px; padding: 15px; border-radius: 8px; display: none; text-align: center; }
@@ -75,7 +87,7 @@
 </div>
 
 <script>
-    // ඔබගේ Apps Script Web App URL එක මෙතැනට දමන්න
+    // ඔබගේ Apps Script Web App URL එක
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzNQri-y70Kxpg_rmFlS36dgUiR43DdYdaFLk4GaPhHfcghSGRAoi8oUl6x4we7VAct/exec"; 
 
     window.onload = function() {
@@ -120,7 +132,7 @@
                         <p><strong>නම:</strong> ${data.name}</p>
                         <p><strong>විභාගය/පාඩම:</strong> ${data.lesson}</p>
                         <p><strong>ලකුණු:</strong> <span style="font-size: 22px; font-weight: bold;">${data.marks}</span></p>
-                        <p><strong>සාමාර්ථය:</strong> <span class="grade-badge">${data.grade}</span></p>
+                        <p><strong>සාමා\u0DDE්\u0DA2ය:</strong> <span class="grade-badge">${data.grade}</span></p>
                     `;
                 } else {
                     resultDiv.className = "error";
