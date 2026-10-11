@@ -3,55 +3,145 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>පන්ති පැමිණීමේ සහ කළමනාකරණ පද්ධතිය</title>
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <title>පන්ති පැමිණීම් සහ කළමනාකරණ පද්ධතිය - Cloud Connected</title>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        :root { --bg-color: #0f172a; --card-bg: #1e293b; --primary: #0284c7; --accent: #10b981; --danger: #ef4444; --warning: #f59e0b; --text: #f8fafc; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background-color: var(--bg-color); color: var(--text); margin: 0; padding: 10px; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 100%; max-width: 500px; background: var(--card-bg); padding: 15px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); margin-bottom: 20px; box-sizing: border-box; }
+        .btn { background-color: var(--primary); color: white; border: none; padding: 10px; border-radius: 6px; cursor: pointer; width: 100%; margin-top: 8px; font-weight: bold; }
+        .btn-success { background-color: var(--accent); }
+        .btn-danger { background-color: var(--danger); }
+        .btn-warning { background-color: var(--warning); color: #000; }
+        .btn-secondary { background-color: #64748b; color: white; }
+        input, select { width: 100%; padding: 10px; margin: 5px 0 10px 0; border-radius: 6px; border: 1px solid #475569; background: #334155; color: white; box-sizing: border-box; }
+        .table-responsive { width: 100%; margin-top: 10px; }
+        table { width: 100%; table-layout: fixed; border-collapse: collapse; }
+        th, td { border: 1px solid #475569; padding: 8px 4px; text-align: center; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        th { background: #334155; }
+        #qrcode { background: white; padding: 10px; border-radius: 8px; display: inline-block; margin-top: 10px; }
+    </style>
 </head>
-<body class="bg-slate-100 min-h-screen p-4">
-
-    <div class="max-w-2xl mx-auto space-y-6">
-        
-        <!-- Header -->
-        <div class="bg-white p-6 rounded-2xl shadow-sm text-center">
-            <h1 class="text-2xl font-bold text-indigo-600">පන්ති පැමිණීමේ පද්ධතිය (Cloud Connected)</h1>
-            <p class="text-sm text-slate-500 mt-1">සියලුම දත්ත දැන් Cloud එකේ Real-time සුරැකේ.</p>
-        </div>
-
-        <!-- 1. ළමුන් ලියාපදිංචි කිරීමේ කොටස -->
-        <div class="bg-white p-6 rounded-2xl shadow-sm">
-            <h2 class="text-lg font-semibold mb-4 text-slate-700">අලුත් ළමයෙක් ලියාපදිංචි කිරීම</h2>
-            <form id="addStudentForm" class="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <input type="text" id="studentId" placeholder="ශිෂ්‍ය අංකය (ID)" required class="p-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
-                <input type="text" id="studentName" placeholder="ශිෂ්‍යයාගේ නම" required class="p-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
-                <button type="submit" class="bg-indigo-600 text-white p-2 rounded-lg font-semibold hover:bg-indigo-700 transition">ළමයා එකතු කරන්න</button>
-            </form>
-        </div>
-
-        <!-- 2. අතින් (Manual) පැමිණීම සටහන් කිරීම සහ සෙවීම -->
-        <div class="bg-white p-6 rounded-2xl shadow-sm">
-            <h2 class="text-lg font-semibold mb-4 text-slate-700">පැමිණීම සටහන් කිරීම (ID හෝ නමින් සෙවීම)</h2>
-            <div class="flex gap-2 mb-4">
-                <input type="text" id="searchInput" placeholder="ID එක හෝ නම ටයිප් කරන්න..." class="flex-1 p-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
-            </div>
-            <!-- සෙවීමේ ප්‍රතිඵල පෙන්වන තැන -->
-            <div id="searchResults" class="space-y-2">
-                <p class="text-slate-400 text-sm">සෙවීමට නමක් හෝ අංකයක් ටයිප් කරන්න...</p>
-            </div>
-        </div>
-
-        <!-- 3. ලියාපදිංචි ළමුන්ගේ ලැයිස්තුව -->
-        <div class="bg-white p-6 rounded-2xl shadow-sm">
-            <h2 class="text-lg font-semibold mb-4 text-slate-700">ලියාපදිංචි ළමුන් ලැයිස්තුව</h2>
-            <div id="studentList" class="space-y-2 max-h-60 overflow-y-auto">
-                <p class="text-slate-400 text-sm">දත්ත පූරණය වෙමින් පවතී...</p>
-            </div>
-        </div>
-
+<body>
+    <!-- 1. QR පැමිණීම -->
+    <div class="container">
+        <h2>📷 QR පැමිණීම</h2>
+        <div id="reader"></div>
+        <div id="status-box" style="margin-top:10px; text-align:center; display:none; padding:10px; border-radius:6px; background:#334155;"></div>
     </div>
 
-    <!-- Firebase SDK & App Logic -->
+    <!-- 2. අතින් පැමිණීම සටහන් කිරීම -->
+    <div class="container" style="border: 1px solid var(--primary);">
+        <h3>✍️ අතින් පැමිණීම සටහන් කිරීම (QR නැතිව)</h3>
+        <input type="text" id="manual-search-input" placeholder="ID අංකය හෝ නම ගහන්න..." onkeyup="searchStudentForManualAtt()">
+        <div id="manual-search-results" style="max-height: 150px; overflow-y: auto; margin-top: 5px;"></div>
+    </div>
+
+    <!-- 3. ආයතන කළමනාකරණය -->
+    <div class="container">
+        <h3>🏢 ආයතන කළමනාකරණය</h3>
+        <input type="text" id="new-inst-name" placeholder="අලුත් ආයතනයේ නම">
+        <button class="btn btn-success" onclick="addInstitute()">➕ ආයතනය එකතු කරන්න</button>
+        <div style="margin-top: 10px;">
+            <select id="delete-inst-select"></select>
+            <button class="btn btn-danger" onclick="deleteInstitute()">🗑️ තෝරාගත් ආයතනය මකන්න</button>
+        </div>
+    </div>
+
+    <!-- 4. ළමයා එකතු කිරීම සහ QR සාදා ගැනීම -->
+    <div class="container">
+        <h3>➕ ළමයා එකතු කිරීම</h3>
+        <label>ආයතනය:</label>
+        <select id="std-inst"></select>
+        <label>පන්තිය:</label>
+        <select id="std-grade">
+            <option value="6 වසර">6 වසර</option><option value="7 වසර">7 වසර</option><option value="8 වසර">8 වසර</option>
+            <option value="9 වසර">9 වසර</option><option value="10 වසර">10 වසර</option><option value="11 වසර">11 වසර</option>
+        </select>
+        <input type="text" id="std-id" placeholder="ID අංකය">
+        <input type="text" id="std-name" placeholder="නම">
+        <input type="tel" id="std-phone" placeholder="දුරකථන අංකය (07xxxxxxxx)">
+        <button class="btn" onclick="registerAndGenerateQR()">QR සාදන්න</button>
+        <button class="btn btn-secondary" onclick="resetStudentForm()">🔄 අලුත් ළමයෙක්</button>
+        <div id="qrcode-container" style="text-align:center;">
+            <div id="qrcode"></div>
+            <br>
+            <button id="download-qr-btn" class="btn btn-success" style="display:none;" onclick="downloadQR()">📥 Download QR</button>
+        </div>
+    </div>
+
+    <!-- 5. මුදල් ගෙවීම් -->
+    <div class="container">
+        <h3>💰 මුදල් ගෙවීම් කළමනාකරණය</h3>
+        <select id="pay-filter-inst" onchange="renderPaymentList()"></select>
+        <select id="pay-filter-grade" onchange="renderPaymentList()">
+            <option value="6 වසර">6 වසර</option><option value="7 වසර">7 වසර</option><option value="8 වසර">8 වසර</option>
+            <option value="9 වසර">9 වසර</option><option value="10 වසර">10 වසර</option><option value="11 වසර">11 වසර</option>
+        </select>
+        <div class="table-responsive">
+            <table>
+                <thead><tr><th style="width:40%">නම</th><th style="width:30%">තත්ත්වය</th><th style="width:30%">ගෙවීම්</th></tr></thead>
+                <tbody id="payment-list-table"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 6. පන්ති උසස් කිරීම -->
+    <div class="container">
+        <h3>🎓 පන්ති උසස් කිරීම (Promotion)</h3>
+        <label>සිට:</label>
+        <select id="promote-from"><option value="6 වසර">6 වසර</option><option value="7 වසර">7 වසර</option><option value="8 වසර">8 වසර</option><option value="9 වසර">9 වසර</option><option value="10 වසර">10 වසර</option></select>
+        <label>දක්වා:</label>
+        <select id="promote-to"><option value="7 වසර">7 වසර</option><option value="8 වසර">8 වසර</option><option value="9 වසර">9 වසර</option><option value="10 වසර">10 වසර</option><option value="11 වසර">11 වසර</option></select>
+        <button class="btn btn-warning" onclick="promoteStudents()">🚀 උසස් කරන්න</button>
+    </div>
+
+    <!-- 7. පැමිණීම් ලැයිස්තුව -->
+    <div class="container">
+        <h3>📋 පැමිණීම් ලැයිස්තුව</h3>
+        <select id="filter-att-inst" onchange="renderTable()"></select>
+        <select id="filter-att-grade" onchange="renderTable()">
+            <option value="සියල්ල">සියලුම පන්ති</option><option value="6 වසර">6 වසර</option><option value="7 වසර">7 වසර</option><option value="8 වසර">8 වසර</option>
+            <option value="9 වසර">9 වසර</option><option value="10 වසර">10 වසර</option><option value="11 වසර">11 වසර</option>
+        </select>
+        <button class="btn btn-success" style="margin-bottom:10px;" onclick="exportToExcel()">📥 Excel බාගත කරන්න (.CSV)</button>
+        <div class="table-responsive">
+            <table>
+                <thead><tr><th style="width:50%">නම</th><th style="width:30%">වේලාව</th><th style="width:20%">SMS</th></tr></thead>
+                <tbody id="attendance-table"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 8. දිනපතා / මාසික වාර්තා -->
+    <div class="container">
+        <h3>📊 පැමිණීමේ වාර්තා</h3>
+        <button class="btn" onclick="showDailyReport()">🗓️ අද දින වාර්තාව</button>
+        <button class="btn btn-secondary" onclick="showMonthlyReport()">📅 මේ මාසයේ වාර්තාව</button>
+        <div id="report-view-box" style="margin-top:10px; padding:10px; background:#334155; border-radius:6px; display:none;"></div>
+    </div>
+
+    <!-- 9. ළමුන් කළමනාකරණය -->
+    <div class="container">
+        <h3>👨‍🎓 ළමුන් කළමනාකරණය</h3>
+        <select id="filter-manage-inst" onchange="renderStudentList()"></select>
+        <select id="filter-manage-grade" onchange="renderStudentList()">
+            <option value="6 වසර">6 වසර</option><option value="7 වසර">7 වසර</option><option value="8 වසර">8 වසර</option>
+            <option value="9 වසර">9 වසර</option><option value="10 වසර">10 වසර</option><option value="11 වසර">11 වසර</option>
+        </select>
+        <div class="table-responsive">
+            <table>
+                <thead><tr><th style="width:20%">ID</th><th style="width:50%">නම</th><th style="width:30%">මකන්න</th></tr></thead>
+                <tbody id="student-list-table"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Firebase SDK සහ පද්ධති තර්කනය (Logic) -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, getDocs, onSnapshot, query, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, collection, doc, setDoc, deleteDoc, getDocs, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         // ඔබේ Firebase Config විස්තර
         const firebaseConfig = {
@@ -67,110 +157,233 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        let allStudents = [];
+        let institutes = ["විමන්සා", "නැණස"];
+        let students = {};
+        let attendance = [];
 
-        // Real-time ළමුන්ගේ දත්ත ලබා ගැනීම
+        // Real-time Data Sync from Firebase
+        onSnapshot(collection(db, "institutes"), (snapshot) => {
+            if(!snapshot.empty) {
+                institutes = [];
+                snapshot.forEach(docSnap => institutes.push(docSnap.data().name));
+            }
+            populateInstitutes();
+        });
+
         onSnapshot(collection(db, "students"), (snapshot) => {
-            allStudents = [];
-            let listHtml = "";
-            
-            if(snapshot.empty) {
-                document.getElementById('studentList').innerHTML = `<p class="text-slate-400 text-sm">තවම ළමුන් ලියාපදිංචි කර නැත.</p>`;
-                return;
-            }
-
-            snapshot.forEach((doc) => {
-                const data = doc.data();
-                allStudents.push({ id: doc.id, ...data });
-                listHtml += `
-                    <div class="flex justify-between items-center p-3 bg-slate-50 rounded-lg border">
-                        <div>
-                            <span class="font-bold text-indigo-600">${data.studentId}</span> - 
-                            <span class="text-slate-800">${data.name}</span>
-                        </div>
-                    </div>
-                `;
+            students = {};
+            snapshot.forEach(docSnap => {
+                students[docSnap.id] = docSnap.data();
             });
-            document.getElementById('studentList').innerHTML = listHtml;
+            renderStudentList();
+            renderPaymentList();
         });
 
-        // ළමයෙක් අලුතින් ඇතුළත් කිරීම
-        const form = document.getElementById('addStudentForm');
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const sId = document.getElementById('studentId').value.trim();
-            const sName = document.getElementById('studentName').value.trim();
-
-            try {
-                await addDoc(collection(db, "students"), {
-                    studentId: sId,
-                    name: sName,
-                    createdAt: new Date()
-                });
-                alert("ශිෂ්‍යයා සාර්ථකව ලියාපදිංචි කරන ලදී!");
-                form.reset();
-            } catch (error) {
-                console.error("දෝෂයකි: ", error);
-                alert("දත්ත සුරැකීම අසාර්ථකයි.");
-            }
-        });
-
-        // නම හෝ ID එක මගින් සෙවීම සහ පැමිණීම සටහන් කිරීම
-        const searchInput = document.getElementById('searchInput');
-        const searchResults = document.getElementById('searchResults');
-
-        searchInput.addEventListener('input', (e) => {
-            const keyword = e.target.value.toLowerCase().trim();
-            if(keyword === "") {
-                searchResults.innerHTML = `<p class="text-slate-400 text-sm">සෙවීමට නමක් හෝ අංකයක් ටයිප් කරන්න...</p>`;
-                return;
-            }
-
-            const filtered = allStudents.filter(s => 
-                s.studentId.toLowerCase().includes(keyword) || s.name.toLowerCase().includes(keyword)
-            );
-
-            if(filtered.length === 0) {
-                searchResults.innerHTML = `<p class="text-red-500 text-sm">එම නමට හෝ අංකයට ගැළපෙන ළමයෙක් හමු නොවීය.</p>`;
-                return;
-            }
-
-            let resultHtml = "";
-            filtered.forEach(s => {
-                resultHtml += `
-                    <div class="flex justify-between items-center p-3 bg-indigo-50 rounded-lg border border-indigo-100">
-                        <div>
-                            <span class="font-bold text-indigo-700">${s.studentId}</span> - 
-                            <span class="text-slate-800 font-medium">${s.name}</span>
-                        </div>
-                        <button onclick="markAttendance('${s.studentId}', '${s.name}')" class="bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-sm font-semibold hover:bg-emerald-700 transition">
-                            පැමිණීම සටහන් කරන්න
-                        </button>
-                    </div>
-                `;
+        onSnapshot(collection(db, "attendance"), (snapshot) => {
+            attendance = [];
+            snapshot.forEach(docSnap => {
+                attendance.push(docSnap.data());
             });
-            searchResults.innerHTML = resultHtml;
+            renderTable();
         });
 
-        // පැමිණීම සටහන් කර Cloud එකට යැවීමේ פונක්ශනය
-        window.markAttendance = async function(sId, sName) {
-            const today = new Date().toISOString().split('T')[0]; // වර්තමාන දිනය (YYYY-MM-DD)
+        window.populateInstitutes = function() {
+            let options = institutes.map(i => `<option value="${i}">${i}</option>`).join('');
+            ['std-inst', 'filter-att-inst', 'filter-manage-inst', 'delete-inst-select', 'pay-filter-inst'].forEach(id => {
+                let el = document.getElementById(id);
+                if(el) el.innerHTML = options;
+            });
+        }
+
+        window.addInstitute = async function() {
+            let name = document.getElementById('new-inst-name').value.trim();
+            if(!name) { alert("ආයතනයේ නම ඇතුළත් කරන්න."); return; }
+            if(institutes.includes(name)) { alert("මෙම ආයතනය දැනටමත් ඇත."); return; }
             
-            try {
-                await addDoc(collection(db, "attendance"), {
-                    studentId: sId,
-                    name: sName,
-                    date: today,
-                    timestamp: new Date()
-                });
-                alert(sName + " ගේ පැමිණීම සාර්ථකව සටහන් විය! ✅");
-                searchInput.value = "";
-                searchResults.innerHTML = `<p class="text-slate-400 text-sm">සෙවීමට නමක් හෝ අංකයක් ටයිප් කරන්න...</p>`;
-            } catch (error) {
-                console.error("දෝෂයකි: ", error);
-                alert("පැමිණීම සටහන් කිරීම අසාර්ථකයි.");
+            await setDoc(doc(db, "institutes", name), { name: name });
+            document.getElementById('new-inst-name').value = '';
+            alert("ආයතනය එකතු කරන ලදී!");
+        }
+
+        window.deleteInstitute = async function() {
+            let name = document.getElementById('delete-inst-select').value;
+            if(institutes.length <= 1) { alert("අඩුම තරමේ එක ආයතනයක්වත් තිබිය යුතුය."); return; }
+            if(confirm(`"${name}" ආයතනය මකන්නද?`)) {
+                await deleteDoc(doc(db, "institutes", name));
             }
         }
+
+        window.registerAndGenerateQR = async function() {
+            let id = document.getElementById('std-id').value.trim();
+            let name = document.getElementById('std-name').value.trim();
+            let phone = document.getElementById('std-phone').value.trim();
+            let grade = document.getElementById('std-grade').value;
+            let inst = document.getElementById('std-inst').value;
+            
+            if(!id || !name) { alert("කරුණාකර ID එක සහ නම ඇතුළත් කරන්න."); return; }
+            
+            let studentData = { name, phone, grade, inst, paid: false };
+            await setDoc(doc(db, "students", id), studentData);
+            
+            document.getElementById('qrcode').innerHTML = "";
+            new QRCode(document.getElementById("qrcode"), id);
+            document.getElementById('download-qr-btn').style.display = 'block';
+            alert("ළමයා සාර්ථකව ලියාපදිංචි විය!");
+        }
+
+        window.processAttendance = async function(studentId) {
+            let std = students[studentId];
+            if(!std) { alert("නොදන්නා ID එකකි!"); return; }
+            let date = new Date().toLocaleDateString();
+            let time = new Date().toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
+            
+            let alreadyMarked = attendance.some(a => a.id === studentId && a.date === date);
+            
+            if(!alreadyMarked) {
+                let attRecord = { id: studentId, name: std.name, phone: std.phone, time, date, grade: std.grade, inst: std.inst };
+                let docId = studentId + "_" + date.replaceAll('/', '-');
+                await setDoc(doc(db, "attendance", docId), attRecord);
+                
+                if(std.phone) {
+                    window.location.href = `sms:${std.phone}?body=ඔබගේ දරුවා වන ${std.name} අද දින ${time} ට පන්තියට පැමිණියේය.`;
+                }
+                
+                document.getElementById('status-box').style.display = 'block';
+                document.getElementById('status-box').innerHTML = `✅ <b style="color:var(--accent);">${std.name}</b> පැමිණියා! (${time})`;
+            } else {
+                document.getElementById('status-box').style.display = 'block';
+                document.getElementById('status-box').innerHTML = `⚠️ <b style="color:var(--warning);">${std.name}</b> දැනටමත් පැමිණීම සටහන් කර ඇත!`;
+            }
+        }
+
+        function onScanSuccess(decodedText) {
+            processAttendance(decodedText);
+        }
+        
+        try {
+            new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 }).render(onScanSuccess);
+        } catch(e) { console.log(e); }
+
+        window.searchStudentForManualAtt = function() {
+            let query = document.getElementById('manual-search-input').value.toLowerCase().trim();
+            let resDiv = document.getElementById('manual-search-results');
+            resDiv.innerHTML = '';
+            if(!query) return;
+
+            Object.keys(students).forEach(id => {
+                let s = students[id];
+                if(id.toLowerCase().includes(query) || s.name.toLowerCase().includes(query)) {
+                    resDiv.innerHTML += `
+                        <div style="background:#1e293b; padding:8px; margin-top:4px; border-radius:4px; display:flex; justify-content:space-between; align-items:center; border:1px solid #475569;">
+                            <div><b>${s.name}</b> (${id}) - <small>${s.grade}</small></div>
+                            <button class="btn btn-success" style="width:auto; padding:4px 8px; margin:0;" onclick="manualMark('${id}')">මාක් කරන්න</button>
+                        </div>
+                    `;
+                }
+            });
+        }
+
+        window.manualMark = function(id) {
+            processAttendance(id);
+            document.getElementById('manual-search-input').value = '';
+            document.getElementById('manual-search-results').innerHTML = '';
+        }
+
+        window.renderPaymentList = function() {
+            let tbody = document.getElementById('payment-list-table'); if(!tbody) return; tbody.innerHTML = '';
+            let inst = document.getElementById('pay-filter-inst').value;
+            let grade = document.getElementById('pay-filter-grade').value;
+
+            Object.keys(students).forEach(id => {
+                if(students[id].inst === inst && students[id].grade === grade) {
+                    let status = students[id].paid ? '<span style="color:var(--accent);">ගෙවා ඇත</span>' : '<span style="color:var(--danger);">ගෙවා නැත</span>';
+                    let btnText = students[id].paid ? '❌ අවලංගු කරන්' : '✅ මාක් කරන්න';
+                    tbody.innerHTML += `<tr><td>${students[id].name}</td><td>${status}</td><td><button class="btn btn-secondary" style="padding:2px 5px; font-size:11px;" onclick="togglePayment('${id}')">${btnText}</button></td></tr>`;
+                }
+            });
+        }
+
+        window.togglePayment = async function(id) {
+            let newPaidStatus = !students[id].paid;
+            await updateDoc(doc(db, "students", id), { paid: newPaidStatus });
+        }
+
+        window.renderTable = function() {
+            let tbody = document.getElementById('attendance-table'); if(!tbody) return; tbody.innerHTML = '';
+            let inst = document.getElementById('filter-att-inst').value;
+            let grade = document.getElementById('filter-att-grade').value;
+
+            attendance.slice().reverse().filter(a => a.inst === inst && (grade === "සියල්ල" || a.grade === grade)).forEach(row => {
+                tbody.innerHTML += `<tr><td>${row.name}</td><td>${row.time}</td><td><a href="sms:${row.phone}?body=ඔබගේ දරුවා ${row.name} පන්තියට පැමිණියේය." style="color:white; text-decoration:none;">📩 Send</a></td></tr>`;
+            });
+        }
+
+        window.exportToExcel = function() {
+            if(attendance.length === 0) { alert("බාගත කිරීමට දත්ත නොමැත."); return; }
+            let csv = "ID,නම,පන්තිය,ආයතනය,දිනය,වේලාව\n";
+            attendance.forEach(a => {
+                csv += `"${a.id}","${a.name}","${a.grade}","${a.inst}","${a.date}","${a.time}"\n`;
+            });
+            let blob = new Blob(["\ufeff", csv], { type: 'text/csv;charset=utf-8;' });
+            let link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = `Attendance_Report.csv`;
+            link.click();
+        }
+
+        window.showDailyReport = function() {
+            let today = new Date().toLocaleDateString();
+            let count = attendance.filter(a => a.date === today).length;
+            let box = document.getElementById('report-view-box');
+            box.style.display = 'block';
+            box.innerHTML = `🗓️ <b>අද දින (${today}):</b> මුළු පැමිණීම <b>${count}</b> කි.`;
+        }
+
+        window.showMonthlyReport = function() {
+            let currentMonth = new Date().getMonth();
+            let currentYear = new Date().getFullYear();
+            let count = attendance.filter(a => {
+                let d = new Date(a.date);
+                return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+            }).length;
+            let box = document.getElementById('report-view-box');
+            box.style.display = 'block';
+            box.innerHTML = `📅 <b>මෙම මාසයේ:</b> මුළු පැමිණීම් <b>${count}</b> කි.`;
+        }
+
+        window.renderStudentList = function() {
+            let tbody = document.getElementById('student-list-table'); if(!tbody) return; tbody.innerHTML = '';
+            let inst = document.getElementById('filter-manage-inst').value;
+            let grade = document.getElementById('filter-manage-grade').value;
+
+            Object.keys(students).forEach(id => {
+                if(students[id].inst === inst && students[id].grade === grade) {
+                    tbody.innerHTML += `<tr><td>${id}</td><td>${students[id].name}</td><td><button class="btn btn-danger" style="padding: 2px 8px;" onclick="deleteStudent('${id}')">🗑️</button></td></tr>`;
+                }
+            });
+        }
+
+        window.deleteStudent = async function(id) {
+            if(confirm("මෙම ළමයා පද්ධතියෙන් ඉවත් කරන්නද?")) {
+                await deleteDoc(doc(db, "students", id));
+            }
+        }
+
+        window.promoteStudents = async function() {
+            let f = document.getElementById('promote-from').value;
+            let t = document.getElementById('promote-to').value;
+            if(confirm(`${f} සිට සියලුම ළමුන් ${t} වෙත උසස් කරනවාද?`)) {
+                for(let id of Object.keys(students)) {
+                    if(students[id].grade === f) {
+                        await updateDoc(doc(db, "students", id), { grade: t });
+                    }
+                }
+                alert("සාර්ථකව උසස් කරන ලදී!");
+            }
+        }
+
+        window.resetStudentForm = function() { location.reload(); }
+        window.downloadQR = function() { alert("QR එක Save කරගන්න"); resetStudentForm(); }
     </script>
 </body>
 </html>
