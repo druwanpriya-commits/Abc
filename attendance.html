@@ -3,43 +3,55 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>පැමිණීමේ පද්ධතිය - Cloud Connected</title>
+    <title>පන්ති පැමිණීමේ සහ කළමනාකරණ පද්ධතිය</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
 </head>
-<body class="bg-slate-50 min-h-screen p-4">
+<body class="bg-slate-100 min-h-screen p-4">
 
-    <div class="max-w-md mx-auto bg-white rounded-xl shadow-md overflow-hidden md:max-w-2xl p-6">
-        <h1 class="text-2xl font-bold text-center text-indigo-600 mb-6">පන්ති පැමිණීමේ පද්ධතිය</h1>
+    <div class="max-w-2xl mx-auto space-y-6">
+        
+        <!-- Header -->
+        <div class="bg-white p-6 rounded-2xl shadow-sm text-center">
+            <h1 class="text-2xl font-bold text-indigo-600">පන්ති පැමිණීමේ පද්ධතිය (Cloud Connected)</h1>
+            <p class="text-sm text-slate-500 mt-1">සියලුම දත්ත දැන් Cloud එකේ Real-time සුරැකේ.</p>
+        </div>
 
-        <!-- ළමයා එකතු කිරීමේ පෝරමය -->
-        <div class="mb-6 bg-slate-50 p-4 rounded-lg border">
-            <h2 class="text-lg font-semibold mb-3 text-slate-700">අලුත් ළමයෙක් ඇතුළත් කිරීම</h2>
-            <form id="addStudentForm" class="space-y-3">
-                <div>
-                    <label class="block text-sm font-medium text-slate-600">ශිෂ්‍ය අංකය (ID)</label>
-                    <input type="text" id="studentId" required class="w-full mt-1 p-2 border rounded-md focus:ring-2 focus:ring-indigo-500">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-slate-600">නම</label>
-                    <input type="text" id="studentName" required class="w-full mt-1 p-2 border rounded-md focus:ring-2 focus:ring-indigo-500">
-                </div>
-                <button type="submit" class="w-full bg-indigo-600 text-white p-2 rounded-md font-semibold hover:bg-indigo-700 transition">Save කරන්න</button>
+        <!-- 1. ළමුන් ලියාපදිංචි කිරීමේ කොටස -->
+        <div class="bg-white p-6 rounded-2xl shadow-sm">
+            <h2 class="text-lg font-semibold mb-4 text-slate-700">අලුත් ළමයෙක් ලියාපදිංචි කිරීම</h2>
+            <form id="addStudentForm" class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <input type="text" id="studentId" placeholder="ශිෂ්‍ය අංකය (ID)" required class="p-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+                <input type="text" id="studentName" placeholder="ශිෂ්‍යයාගේ නම" required class="p-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+                <button type="submit" class="bg-indigo-600 text-white p-2 rounded-lg font-semibold hover:bg-indigo-700 transition">ළමයා එකතු කරන්න</button>
             </form>
         </div>
 
-        <!-- ළමුන්ගේ ලැයිස්තුව -->
-        <div>
-            <h2 class="text-lg font-semibold mb-3 text-slate-700">ලියාපදිංචි ළමුන් ලැයිස්තුව (Cloud Data)</h2>
-            <div id="studentList" class="space-y-2">
+        <!-- 2. අතින් (Manual) පැමිණීම සටහන් කිරීම සහ සෙවීම -->
+        <div class="bg-white p-6 rounded-2xl shadow-sm">
+            <h2 class="text-lg font-semibold mb-4 text-slate-700">පැමිණීම සටහන් කිරීම (ID හෝ නමින් සෙවීම)</h2>
+            <div class="flex gap-2 mb-4">
+                <input type="text" id="searchInput" placeholder="ID එක හෝ නම ටයිප් කරන්න..." class="flex-1 p-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+            </div>
+            <!-- සෙවීමේ ප්‍රතිඵල පෙන්වන තැන -->
+            <div id="searchResults" class="space-y-2">
+                <p class="text-slate-400 text-sm">සෙවීමට නමක් හෝ අංකයක් ටයිප් කරන්න...</p>
+            </div>
+        </div>
+
+        <!-- 3. ලියාපදිංචි ළමුන්ගේ ලැයිස්තුව -->
+        <div class="bg-white p-6 rounded-2xl shadow-sm">
+            <h2 class="text-lg font-semibold mb-4 text-slate-700">ලියාපදිංචි ළමුන් ලැයිස්තුව</h2>
+            <div id="studentList" class="space-y-2 max-h-60 overflow-y-auto">
                 <p class="text-slate-400 text-sm">දත්ත පූරණය වෙමින් පවතී...</p>
             </div>
         </div>
+
     </div>
 
-    <!-- Firebase SDK Scripts -->
+    <!-- Firebase SDK & App Logic -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, getDocs, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, getDocs, onSnapshot, query, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         // ඔබේ Firebase Config විස්තර
         const firebaseConfig = {
@@ -52,16 +64,42 @@
             measurementId: "G-TKDY181B1S"
         };
 
-        // Firebase Initialize කිරීම
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // 1. ළමයෙක් Submit කළ විට Firestore එකට Save කිරීම
+        let allStudents = [];
+
+        // Real-time ළමුන්ගේ දත්ත ලබා ගැනීම
+        onSnapshot(collection(db, "students"), (snapshot) => {
+            allStudents = [];
+            let listHtml = "";
+            
+            if(snapshot.empty) {
+                document.getElementById('studentList').innerHTML = `<p class="text-slate-400 text-sm">තවම ළමුන් ලියාපදිංචි කර නැත.</p>`;
+                return;
+            }
+
+            snapshot.forEach((doc) => {
+                const data = doc.data();
+                allStudents.push({ id: doc.id, ...data });
+                listHtml += `
+                    <div class="flex justify-between items-center p-3 bg-slate-50 rounded-lg border">
+                        <div>
+                            <span class="font-bold text-indigo-600">${data.studentId}</span> - 
+                            <span class="text-slate-800">${data.name}</span>
+                        </div>
+                    </div>
+                `;
+            });
+            document.getElementById('studentList').innerHTML = listHtml;
+        });
+
+        // ළමයෙක් අලුතින් ඇතුළත් කිරීම
         const form = document.getElementById('addStudentForm');
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const sId = document.getElementById('studentId').value;
-            const sName = document.getElementById('studentName').value;
+            const sId = document.getElementById('studentId').value.trim();
+            const sName = document.getElementById('studentName').value.trim();
 
             try {
                 await addDoc(collection(db, "students"), {
@@ -69,37 +107,70 @@
                     name: sName,
                     createdAt: new Date()
                 });
-                alert("සාර්ථකව දත්ත සුරැකުණි!");
+                alert("ශිෂ්‍යයා සාර්ථකව ලියාපදිංචි කරන ලදී!");
                 form.reset();
             } catch (error) {
-                console.error("දෝෂයක් සිදු විය: ", error);
+                console.error("දෝෂයකි: ", error);
                 alert("දත්ත සුරැකීම අසාර්ථකයි.");
             }
         });
 
-        // 2. Real-time දත්ත ලබාගෙන Screen එකේ පෙන්වීම
-        const studentListDiv = document.getElementById('studentList');
-        
-        onSnapshot(collection(db, "students"), (snapshot) => {
-            let html = "";
-            if(snapshot.empty) {
-                studentListDiv.innerHTML = `<p class="text-slate-500 text-sm">තවම ළමුන් ඇතුළත් කර නැත.</p>`;
+        // නම හෝ ID එක මගින් සෙවීම සහ පැමිණීම සටහන් කිරීම
+        const searchInput = document.getElementById('searchInput');
+        const searchResults = document.getElementById('searchResults');
+
+        searchInput.addEventListener('input', (e) => {
+            const keyword = e.target.value.toLowerCase().trim();
+            if(keyword === "") {
+                searchResults.innerHTML = `<p class="text-slate-400 text-sm">සෙවීමට නමක් හෝ අංකයක් ටයිප් කරන්න...</p>`;
                 return;
             }
 
-            snapshot.forEach((doc) => {
-                const data = doc.data();
-                html += `
-                    <div class="flex justify-between items-center p-3 bg-slate-100 rounded-md border">
+            const filtered = allStudents.filter(s => 
+                s.studentId.toLowerCase().includes(keyword) || s.name.toLowerCase().includes(keyword)
+            );
+
+            if(filtered.length === 0) {
+                searchResults.innerHTML = `<p class="text-red-500 text-sm">එම නමට හෝ අංකයට ගැළපෙන ළමයෙක් හමු නොවීය.</p>`;
+                return;
+            }
+
+            let resultHtml = "";
+            filtered.forEach(s => {
+                resultHtml += `
+                    <div class="flex justify-between items-center p-3 bg-indigo-50 rounded-lg border border-indigo-100">
                         <div>
-                            <span class="font-bold text-indigo-700">${data.studentId}</span> - 
-                            <span class="text-slate-800">${data.name}</span>
+                            <span class="font-bold text-indigo-700">${s.studentId}</span> - 
+                            <span class="text-slate-800 font-medium">${s.name}</span>
                         </div>
+                        <button onclick="markAttendance('${s.studentId}', '${s.name}')" class="bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-sm font-semibold hover:bg-emerald-700 transition">
+                            පැමිණීම සටහන් කරන්න
+                        </button>
                     </div>
                 `;
             });
-            studentListDiv.innerHTML = html;
+            searchResults.innerHTML = resultHtml;
         });
+
+        // පැමිණීම සටහන් කර Cloud එකට යැවීමේ פונක්ශනය
+        window.markAttendance = async function(sId, sName) {
+            const today = new Date().toISOString().split('T')[0]; // වර්තමාන දිනය (YYYY-MM-DD)
+            
+            try {
+                await addDoc(collection(db, "attendance"), {
+                    studentId: sId,
+                    name: sName,
+                    date: today,
+                    timestamp: new Date()
+                });
+                alert(sName + " ගේ පැමිණීම සාර්ථකව සටහන් විය! ✅");
+                searchInput.value = "";
+                searchResults.innerHTML = `<p class="text-slate-400 text-sm">සෙවීමට නමක් හෝ අංකයක් ටයිප් කරන්න...</p>`;
+            } catch (error) {
+                console.error("දෝෂයකි: ", error);
+                alert("පැමිණීම සටහන් කිරීම අසාර්ථකයි.");
+            }
+        }
     </script>
 </body>
 </html>
