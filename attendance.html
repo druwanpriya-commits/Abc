@@ -229,44 +229,68 @@
                 
                 let tempQrContainer = document.getElementById("temp-qrcode");
                 tempQrContainer.innerHTML = "";
+                
+                // Generate QR inside temp container using QRCode library
                 new QRCode(tempQrContainer, {
                     text: id,
                     width: 200,
                     height: 200
                 });
                 
+                // Give enough time for the QR image/canvas to render fully, then draw on main canvas
                 setTimeout(() => {
-                    let qrImg = tempQrContainer.querySelector('img');
                     let canvas = document.getElementById('qrcode-canvas');
                     let ctx = canvas.getContext('2d');
                     
                     canvas.width = 250;
                     canvas.height = 300;
 
+                    // White Background
                     ctx.fillStyle = "#FFFFFF";
                     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+                    // Check if QR generated as <img> or <canvas>
+                    let qrImg = tempQrContainer.querySelector('img');
+                    let qrCanvasElem = tempQrContainer.querySelector('canvas');
+
                     if (qrImg) {
                         ctx.drawImage(qrImg, 25, 15, 200, 200);
+                        drawTextAndFinish(canvas, ctx, name, id);
+                    } else if (qrCanvasElem) {
+                        ctx.drawImage(qrCanvasElem, 25, 15, 200, 200);
+                        drawTextAndFinish(canvas, ctx, name, id);
+                    } else {
+                        // Fallback retry if loading took slightly longer
+                        setTimeout(() => {
+                            let retryImg = tempQrContainer.querySelector('img');
+                            let retryCanvas = tempQrContainer.querySelector('canvas');
+                            if (retryImg) ctx.drawImage(retryImg, 25, 15, 200, 200);
+                            else if (retryCanvas) ctx.drawImage(retryCanvas, 25, 15, 200, 200);
+                            drawTextAndFinish(canvas, ctx, name, id);
+                        }, 500);
                     }
-
-                    ctx.fillStyle = "#000000";
-                    ctx.font = "bold 16px Arial, sans-serif";
-                    ctx.textAlign = "center";
-                    ctx.fillText(name, canvas.width / 2, 245);
-
-                    ctx.font = "14px Arial, sans-serif";
-                    ctx.fillStyle = "#333333";
-                    ctx.fillText("ID: " + id, canvas.width / 2, 275);
-
-                    canvas.style.display = 'block';
-                    document.getElementById('download-qr-btn').style.display = 'block';
-                    alert("ළමයා සාර්ථකව ලියාපදිංචි කර QR කේතය සාදන ලදී!");
                 }, 400);
 
             } catch(e) {
                 alert("ළමයා ඇතුළත් කිරීම අසාර්ථකයි: " + e.message);
             }
+        }
+
+        function drawTextAndFinish(canvas, ctx, name, id) {
+            // Write Student Name
+            ctx.fillStyle = "#000000";
+            ctx.font = "bold 16px Arial, sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText(name, canvas.width / 2, 245);
+
+            // Write Student ID
+            ctx.font = "14px Arial, sans-serif";
+            ctx.fillStyle = "#333333";
+            ctx.fillText("ID: " + id, canvas.width / 2, 275);
+
+            canvas.style.display = 'block';
+            document.getElementById('download-qr-btn').style.display = 'block';
+            alert("ළමයා සාර්ථකව ලියාපදිංචි කර QR කේතය සාදන ලදී!");
         }
 
         window.processAttendance = async function(studentId) {
