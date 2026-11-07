@@ -20,7 +20,7 @@
         table { width: 100%; table-layout: fixed; border-collapse: collapse; }
         th, td { border: 1px solid #475569; padding: 8px 4px; text-align: center; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         th { background: #334155; }
-        #qrcode { background: white; padding: 10px; border-radius: 8px; display: inline-block; margin-top: 10px; }
+        #qrcode-canvas { background: white; padding: 10px; border-radius: 8px; display: inline-block; margin-top: 10px; }
     </style>
 </head>
 <body>
@@ -64,8 +64,10 @@
         <input type="tel" id="std-phone" placeholder="දුරකථන අංකය (07xxxxxxxx)">
         <button class="btn" onclick="registerAndGenerateQR()">QR සාදන්න</button>
         <button class="btn btn-secondary" onclick="resetStudentForm()">🔄 අලුත් ළමයෙක්</button>
+        
         <div id="qrcode-container" style="text-align:center;">
-            <div id="qrcode"></div>
+            <div id="temp-qrcode" style="display:none;"></div>
+            <canvas id="qrcode-canvas" style="display:none; margin: 10px auto; border-radius: 8px;"></canvas>
             <br>
             <button id="download-qr-btn" class="btn btn-success" style="display:none;" onclick="downloadQR()">📥 Download QR</button>
         </div>
@@ -138,12 +140,10 @@
         </div>
     </div>
 
-    <!-- Firebase SDK සහ පද්ධති තර්කනය (Logic) -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, collection, doc, setDoc, deleteDoc, getDocs, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        // ඔබේ Firebase Config විස්තර
         const firebaseConfig = {
             apiKey: "AIzaSyDWtZbd807Lbl-NDkHiFWij0jcowHP6eCQ",
             authDomain: "attendance-ffb99.firebaseapp.com",
@@ -161,14 +161,13 @@
         let students = {};
         let attendance = [];
 
-        // Real-time Data Sync from Firebase
         onSnapshot(collection(db, "institutes"), (snapshot) => {
             if(!snapshot.empty) {
                 institutes = [];
                 snapshot.forEach(docSnap => institutes.push(docSnap.data().name));
             }
             populateInstitutes();
-        });
+        }, (error) => { console.log("Institute Load Error: ", error); });
 
         onSnapshot(collection(db, "students"), (snapshot) => {
             students = {};
@@ -177,7 +176,7 @@
             });
             renderStudentList();
             renderPaymentList();
-        });
+        }, (error) => { console.log("Student Load Error: ", error); });
 
         onSnapshot(collection(db, "attendance"), (snapshot) => {
             attendance = [];
@@ -185,7 +184,7 @@
                 attendance.push(docSnap.data());
             });
             renderTable();
-        });
+        }, (error) => { console.log("Attendance Load Error: ", error); });
 
         window.populateInstitutes = function() {
             let options = institutes.map(i => `<option value="${i}">${i}</option>`).join('');
@@ -199,17 +198,18 @@
             let name = document.getElementById('new-inst-name').value.trim();
             if(!name) { alert("ආයතනයේ නම ඇතුළත් කරන්න."); return; }
             if(institutes.includes(name)) { alert("මෙම ආයතනය දැනටමත් ඇත."); return; }
-            
-            await setDoc(doc(db, "institutes", name), { name: name });
-            document.getElementById('new-inst-name').value = '';
-            alert("ආයතනය එකතු කරන ලදී!");
+            try {
+                await setDoc(doc(db, "institutes", name), { name: name });
+                document.getElementById('new-inst-name').value = '';
+                alert("ආයතනය එකතු කරන ලදී!");
+            } catch(e) { alert("දෝෂයක් සිදු විය: " + e.message); }
         }
 
         window.deleteInstitute = async function() {
             let name = document.getElementById('delete-inst-select').value;
             if(institutes.length <= 1) { alert("අඩුම තරමේ එක ආයතනයක්වත් තිබිය යුතුය."); return; }
             if(confirm(`"${name}" ආයතනය මකන්නද?`)) {
-                await deleteDoc(doc(db, "institutes", name));
+                try { await deleteDoc(doc(db, "institutes", name)); } catch(e) { alert(e.message); }
             }
         }
 
@@ -223,12 +223,50 @@
             if(!id || !name) { alert("කරුණාකර ID එක සහ නම ඇතුළත් කරන්න."); return; }
             
             let studentData = { name, phone, grade, inst, paid: false };
-            await setDoc(doc(db, "students", id), studentData);
             
-            document.getElementById('qrcode').innerHTML = "";
-            new QRCode(document.getElementById("qrcode"), id);
-            document.getElementById('download-qr-btn').style.display = 'block';
-            alert("ළමයා සාර්ථකව ලියාපදිංචි විය!");
+            try {
+                await setDoc(doc(db, "students", id), studentData);
+                
+                let tempQrContainer = document.getElementById("temp-qrcode");
+                tempQrContainer.innerHTML = "";
+                new QRCode(tempQrContainer, {
+                    text: id,
+                    width: 200,
+                    height: 200
+                });
+                
+                setTimeout(() => {
+                    let qrImg = tempQrContainer.querySelector('img');
+                    let canvas = document.getElementById('qrcode-canvas');
+                    let ctx = canvas.getContext('2d');
+                    
+                    canvas.width = 250;
+                    canvas.height = 300;
+
+                    ctx.fillStyle = "#FFFFFF";
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                    if (qrImg) {
+                        ctx.drawImage(qrImg, 25, 15, 200, 200);
+                    }
+
+                    ctx.fillStyle = "#000000";
+                    ctx.font = "bold 16px Arial, sans-serif";
+                    ctx.textAlign = "center";
+                    ctx.fillText(name, canvas.width / 2, 245);
+
+                    ctx.font = "14px Arial, sans-serif";
+                    ctx.fillStyle = "#333333";
+                    ctx.fillText("ID: " + id, canvas.width / 2, 275);
+
+                    canvas.style.display = 'block';
+                    document.getElementById('download-qr-btn').style.display = 'block';
+                    alert("ළමයා සාර්ථකව ලියාපදිංචි කර QR කේතය සාදන ලදී!");
+                }, 400);
+
+            } catch(e) {
+                alert("ළමයා ඇතුළත් කිරීම අසාර්ථකයි: " + e.message);
+            }
         }
 
         window.processAttendance = async function(studentId) {
@@ -242,31 +280,34 @@
             if(!alreadyMarked) {
                 let attRecord = { id: studentId, name: std.name, phone: std.phone, time, date, grade: std.grade, inst: std.inst };
                 let docId = studentId + "_" + date.replaceAll('/', '-');
-                await setDoc(doc(db, "attendance", docId), attRecord);
-                
-                if(std.phone) {
-                    window.location.href = `sms:${std.phone}?body=ඔබගේ දරුවා වන ${std.name} අද දින ${time} ට පන්තියට පැමිණියේය.`;
-                }
-                
-                document.getElementById('status-box').style.display = 'block';
-                document.getElementById('status-box').innerHTML = `✅ <b style="color:var(--accent);">${std.name}</b> පැමිණියා! (${time})`;
+                try {
+                    await setDoc(doc(db, "attendance", docId), attRecord);
+                    
+                    if(std.phone) {
+                        window.location.href = `sms:${std.phone}?body=ඔබගේ දරුවා වන ${std.name} අද දින ${time} ට පන්තියට පැමිණියේය.`;
+                    }
+                    
+                    let statusBox = document.getElementById('status-box');
+                    statusBox.style.display = 'block';
+                    statusBox.innerHTML = `✅ <b style="color:var(--accent);">${std.name}</b> පැමිණියා! (${time})`;
+                } catch(e) { alert("පැමිණීම සටහන් කිරීම අසාර්ථකයි: " + e.message); }
             } else {
-                document.getElementById('status-box').style.display = 'block';
-                document.getElementById('status-box').innerHTML = `⚠️ <b style="color:var(--warning);">${std.name}</b> දැනටමත් පැමිණීම සටහන් කර ඇත!`;
+                let statusBox = document.getElementById('status-box');
+                statusBox.style.display = 'block';
+                statusBox.innerHTML = `⚠️ <b style="color:var(--warning);">${std.name}</b> දැනටමත් පැමිණීම සටහන් කර ඇත!`;
             }
         }
 
-        function onScanSuccess(decodedText) {
-            processAttendance(decodedText);
-        }
-        
         try {
-            new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 }).render(onScanSuccess);
+            new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 }).render((decodedText) => {
+                processAttendance(decodedText);
+            }, (error) => {});
         } catch(e) { console.log(e); }
 
         window.searchStudentForManualAtt = function() {
             let query = document.getElementById('manual-search-input').value.toLowerCase().trim();
             let resDiv = document.getElementById('manual-search-results');
+            if(!resDiv) return;
             resDiv.innerHTML = '';
             if(!query) return;
 
@@ -291,8 +332,12 @@
 
         window.renderPaymentList = function() {
             let tbody = document.getElementById('payment-list-table'); if(!tbody) return; tbody.innerHTML = '';
-            let inst = document.getElementById('pay-filter-inst').value;
-            let grade = document.getElementById('pay-filter-grade').value;
+            let instEl = document.getElementById('pay-filter-inst');
+            let gradeEl = document.getElementById('pay-filter-grade');
+            if(!instEl || !gradeEl) return;
+            
+            let inst = instEl.value;
+            let grade = gradeEl.value;
 
             Object.keys(students).forEach(id => {
                 if(students[id].inst === inst && students[id].grade === grade) {
@@ -304,14 +349,20 @@
         }
 
         window.togglePayment = async function(id) {
-            let newPaidStatus = !students[id].paid;
-            await updateDoc(doc(db, "students", id), { paid: newPaidStatus });
+            try {
+                let newPaidStatus = !students[id].paid;
+                await updateDoc(doc(db, "students", id), { paid: newPaidStatus });
+            } catch(e) { alert(e.message); }
         }
 
         window.renderTable = function() {
             let tbody = document.getElementById('attendance-table'); if(!tbody) return; tbody.innerHTML = '';
-            let inst = document.getElementById('filter-att-inst').value;
-            let grade = document.getElementById('filter-att-grade').value;
+            let instEl = document.getElementById('filter-att-inst');
+            let gradeEl = document.getElementById('filter-att-grade');
+            if(!instEl || !gradeEl) return;
+
+            let inst = instEl.value;
+            let grade = gradeEl.value;
 
             attendance.slice().reverse().filter(a => a.inst === inst && (grade === "සියල්ල" || a.grade === grade)).forEach(row => {
                 tbody.innerHTML += `<tr><td>${row.name}</td><td>${row.time}</td><td><a href="sms:${row.phone}?body=ඔබගේ දරුවා ${row.name} පන්තියට පැමිණියේය." style="color:white; text-decoration:none;">📩 Send</a></td></tr>`;
@@ -353,8 +404,12 @@
 
         window.renderStudentList = function() {
             let tbody = document.getElementById('student-list-table'); if(!tbody) return; tbody.innerHTML = '';
-            let inst = document.getElementById('filter-manage-inst').value;
-            let grade = document.getElementById('filter-manage-grade').value;
+            let instEl = document.getElementById('filter-manage-inst');
+            let gradeEl = document.getElementById('filter-manage-grade');
+            if(!instEl || !gradeEl) return;
+
+            let inst = instEl.value;
+            let grade = gradeEl.value;
 
             Object.keys(students).forEach(id => {
                 if(students[id].inst === inst && students[id].grade === grade) {
@@ -365,7 +420,7 @@
 
         window.deleteStudent = async function(id) {
             if(confirm("මෙම ළමයා පද්ධතියෙන් ඉවත් කරන්නද?")) {
-                await deleteDoc(doc(db, "students", id));
+                try { await deleteDoc(doc(db, "students", id)); } catch(e) { alert(e.message); }
             }
         }
 
@@ -373,17 +428,35 @@
             let f = document.getElementById('promote-from').value;
             let t = document.getElementById('promote-to').value;
             if(confirm(`${f} සිට සියලුම ළමුන් ${t} වෙත උසස් කරනවාද?`)) {
-                for(let id of Object.keys(students)) {
-                    if(students[id].grade === f) {
-                        await updateDoc(doc(db, "students", id), { grade: t });
+                try {
+                    for(let id of Object.keys(students)) {
+                        if(students[id].grade === f) {
+                            await updateDoc(doc(db, "students", id), { grade: t });
+                        }
                     }
-                }
-                alert("සාර්ථකව උසස් කරන ලදී!");
+                    alert("සාර්ථකව උසස් කරන ලදී!");
+                } catch(e) { alert(e.message); }
             }
         }
 
         window.resetStudentForm = function() { location.reload(); }
-        window.downloadQR = function() { alert("QR එක Save කරගන්න"); resetStudentForm(); }
+
+        window.downloadQR = function() { 
+            let qrCanvas = document.getElementById("qrcode-canvas");
+            let id = document.getElementById('std-id').value.trim();
+            let name = document.getElementById('std-name').value.trim();
+            
+            if(qrCanvas && qrCanvas.style.display !== 'none') {
+                let link = document.createElement('a');
+                link.download = `${id}_${name}.png`;
+                link.href = qrCanvas.toDataURL("image/png");
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            } else {
+                alert("කරුණාකර පළමුව QR එක සාදාගන්න.");
+            }
+        }
     </script>
 </body>
 </html>
