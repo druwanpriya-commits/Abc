@@ -402,13 +402,23 @@
             });
         }
 
+        // ළමයා ආරක්ෂිතව මකා දැමීම (Delete Student)
         window.deleteStudent = async function(id) {
-            if(confirm("මෙම ළමයා පද්ධතියෙන් ඉවත් කරන්නද?")) {
-                try { await deleteDoc(doc(db, "students", id)); } catch(e) { alert(e.message); }
+            if(confirm(`මෙම ළමයා (ID: ${id}) පද්ධතියෙන් සහ ඩේටාබේස් එකෙන් සම්පූර්ණයෙන්ම ඉවත් කරන්නද?`)) {
+                try {
+                    await deleteDoc(doc(db, "students", id));
+                    // ලෝකල් ඔබ්ජෙක්ට් එකෙන්ද ඉවත් කිරීම
+                    delete students[id];
+                    renderStudentList();
+                    renderPaymentList();
+                    alert("ළමයා සාර්ථකව මකා දමන ලදී!");
+                } catch(e) { 
+                    alert("මකා දැමීමේ දෝෂයක් ඇති විය: " + e.message); 
+                }
             }
         }
 
-        window.promoteStudents, window.promoteStudents = async function() {
+        window.promoteStudents = async function() {
             let f = document.getElementById('promote-from').value;
             let t = document.getElementById('promote-to').value;
             if(confirm(`${f} සිට සියලුම ළමුන් ${t} වෙත උසස් කරනවාද?`)) {
@@ -425,7 +435,6 @@
 
         window.resetStudentForm = function() { location.reload(); }
 
-        // Ultra High-Definition (HD) Canvas Rendering for Crystal Clear Mobile Viewing
         window.downloadQR = function() {
             let id = document.getElementById('std-id').value.trim();
             let name = document.getElementById('std-name').value.trim();
@@ -435,30 +444,25 @@
             let canvas = document.getElementById("download-canvas");
             let ctx = canvas.getContext("2d");
 
-            // 4x Scale එකක් භාවිත කරමින් අකුරු සහ QR එක අතිශයින්ම තියුණු (Sharp & Clear) ලෙස සැකසීම
             let scale = 4;
             canvas.width = 600 * scale;
             canvas.height = 700 * scale;
             ctx.scale(scale, scale);
 
-            // පිරිසිදු සුදු පාට පසුබිමක්
             ctx.fillStyle = "#FFFFFF";
             ctx.fillRect(0, 0, 600, 700);
 
             function finishDownload() {
-                // නම ඉතා පැහැදිලි ලෙස HD Quality එකෙන් ලිවීම
                 ctx.fillStyle = "#000000";
                 ctx.font = "bold 28px Arial, sans-serif";
                 ctx.textAlign = "center";
                 ctx.textBaseline = "middle";
                 ctx.fillText(name, 600 / 2, 550);
 
-                // ID එක ඉතා පැහැදිලි ලෙස HD Quality එකෙන් ලිවීම
                 ctx.font = "22px Arial, sans-serif";
                 ctx.fillStyle = "#444444";
                 ctx.fillText("ID: " + id, 600 / 2, 605);
 
-                // Gallery එකේ බලනකොට බ්ලර් නොවී පෙනෙන පරිදි උපරිම ගුණත්වයෙන් (Quality 1.0) ඩවුන්ලෝඩ් වීම
                 let link = document.createElement('a');
                 link.download = `${id}_${name}.png`;
                 link.href = canvas.toDataURL("image/png", 1.0);
