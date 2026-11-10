@@ -81,10 +81,20 @@
         </div>
     </div>
 
-    <!-- 5. මුදල් ගෙවීම් (Quick Search සමග) -->
+    <!-- 5. මුදල් ගෙවීම් (Search සහ Full List බටන් සමග) -->
     <div class="container">
         <h3>💰 මුදල් ගෙවීම් කළමනාකරණය</h3>
-        <input type="text" id="pay-search-input" placeholder="🔍 ළමයාගේ නම හෝ ID එක ගහලා ක්ෂණිකව සොයන්න..." onkeyup="renderPaymentList()">
+        <label>ආයතනය තෝරන්න:</label>
+        <select id="pay-filter-inst" onchange="renderPaymentList()"></select>
+        <label>ශ්‍රේණිය තෝරන්න:</label>
+        <select id="pay-filter-grade" onchange="renderPaymentList()">
+            <option value="6 වසර">6 වසර</option><option value="7 වසර">7 වසර</option><option value="8 වසර">8 වසර</option>
+            <option value="9 වසර">9 වසර</option><option value="10 වසර">10 වසර</option><option value="11 වසර">11 වසර</option>
+        </select>
+        
+        <input type="text" id="pay-search-input" placeholder="🔍 නම හෝ ID එක ගහලා සොයන්න..." onkeyup="renderPaymentList()">
+        <button class="btn btn-secondary" onclick="toggleFullList()">📋 සම්පූර්ණ ලැයිස්තුව පෙන්වන්න / වසන්න</button>
+
         <div class="table-responsive">
             <table>
                 <thead><tr><th style="width:45%">නම / විස්තරය</th><th style="width:25%">තත්ත්වය</th><th style="width:30%">ගෙවීම්</th></tr></thead>
@@ -150,6 +160,7 @@
         let institutes = ["විමන්සා", "නැණස"];
         let students = {};
         let attendance = [];
+        let showAllListFlag = false; // සම්පූර්ණ ලැයිස්තුව පෙන්වීමේ ස්විච් එක
 
         async function apiCall(payload) {
             try {
@@ -230,7 +241,7 @@
 
         window.populateInstitutes = function() {
             let options = institutes.map(i => `<option value="${i}">${i}</option>`).join('');
-            ['std-inst', 'filter-att-inst', 'filter-manage-inst', 'delete-inst-select'].forEach(id => {
+            ['std-inst', 'filter-att-inst', 'filter-manage-inst', 'delete-inst-select', 'pay-filter-inst'].forEach(id => {
                 let el = document.getElementById(id);
                 if(el) el.innerHTML = options;
             });
@@ -357,40 +368,57 @@
             document.getElementById('manual-search-results').innerHTML = '';
         }
 
-        // ක්ෂණික සෙවුම් පහසුකම සහ සිංහලෙන් ගෙවීම් පෙන්වීම
+        // සම්පූර්ණ ලැයිස්තුව පෙන්වීමේ බටන් එකේ ෆන්ක්ෂන් එක
+        window.toggleFullList = function() {
+            showAllListFlag = !showAllListFlag;
+            renderPaymentList();
+        }
+
+        // ක්ෂණික සෙවුම, ආයතන/ශ්‍රේණි ෆිල්ටර් සහ අංක පිළිවෙලට (Ascending) ලැයිස්තුව පෙන්වීම
         window.renderPaymentList = function() {
             let tbody = document.getElementById('payment-list-table'); if(!tbody) return; tbody.innerHTML = '';
             let searchInput = document.getElementById('pay-search-input');
-            if(!searchInput) return;
+            let instEl = document.getElementById('pay-filter-inst');
+            let gradeEl = document.getElementById('pay-filter-grade');
+            if(!searchInput || !instEl || !gradeEl) return;
             
             let query = searchInput.value.toLowerCase().trim();
-            if(!query) {
-                tbody.innerHTML = `<tr><td colspan="3" style="color:#94a3b8; padding:15px;">🔍 සෙවීමට ළමයාගේ නම හෝ ID එක ටයිප් කරන්න...</td></tr>`;
-                return;
-            }
+            let selectedInst = instEl.value;
+            let selectedGrade = gradeEl.value;
+
+            // ළමුන්ගේ ID අංක ආරෝහණ ක්‍රමයට (Ascending - අංක පිළිවෙලට) සෝට් කරගැනීම
+            let sortedIds = Object.keys(students).sort((a, b) => {
+                return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
+            });
 
             let count = 0;
-            Object.keys(students).forEach(id => {
+            sortedIds.forEach(id => {
                 let s = students[id];
-                if(id.toLowerCase().includes(query) || s.name.toLowerCase().includes(query)) {
-                    count++;
-                    let statusText = s.paid ? "ගෙවා ඇත" : "ගෙවා නැත";
-                    let statusColor = s.paid ? "var(--accent)" : "var(--danger)";
-                    let btnText = s.paid ? '❌ අවලංගු කරන්න' : '✅ ගෙව්වා ලෙස මාක් කරන්න';
-                    let btnClass = s.paid ? 'btn btn-danger' : 'btn btn-success';
+                // ආයතනය සහ ශ්‍රේණිය ගැළපිය යුතුය
+                if(s.inst === selectedInst && s.grade === selectedGrade) {
+                    // සෙවුම් පදය ගැළපේ නම් හෝ "සම්පූර්ණ ලැයිස්තුව පෙන්වන්න" බටන් එක ඔන් කර ඇත්නම් පෙන්වන්න
+                    let matchesQuery = !query || id.toLowerCase().includes(query) || s.name.toLowerCase().includes(query);
                     
-                    tbody.innerHTML += `
-                        <tr>
-                            <td style="text-align:left; padding-left:8px;"><b>${s.name}</b><br><small style="color:#94a3b8;">${id} | ${s.grade} (${s.inst})</small></td>
-                            <td><span style="color:${statusColor}; font-weight:bold;">${statusText}</span></td>
-                            <td><button class="${btnClass}" style="padding:6px 10px; font-size:11px; width:auto;" onclick="togglePayment('${id}')">${btnText}</button></td>
-                        </tr>
-                    `;
+                    if(showAllListFlag || matchesQuery) {
+                        count++;
+                        let statusText = s.paid ? "ගෙවා ඇත" : "ගෙවා නැත";
+                        let statusColor = s.paid ? "var(--accent)" : "var(--danger)";
+                        let btnText = s.paid ? '❌ අවලංගු කරන්න' : '✅ ගෙව්වා ලෙස මාක් කරන්න';
+                        let btnClass = s.paid ? 'btn btn-danger' : 'btn btn-success';
+                        
+                        tbody.innerHTML += `
+                            <tr>
+                                <td style="text-align:left; padding-left:8px;"><b>${s.name}</b><br><small style="color:#94a3b8;">ID: ${id}</small></td>
+                                <td><span style="color:${statusColor}; font-weight:bold;">${statusText}</span></td>
+                                <td><button class="${btnClass}" style="padding:6px 10px; font-size:11px; width:auto;" onclick="togglePayment('${id}')">${btnText}</button></td>
+                            </tr>
+                        `;
+                    }
                 }
             });
 
-            if(count ===0) {
-                tbody.innerHTML = `<tr><td colspan="3" style="color:#ef4444; padding:15px;">සැමදුම් නමකට අදාළ ළමයෙක් හමු නොවීය.</td></tr>`;
+            if(count === 0) {
+                tbody.innerHTML = `<tr><td colspan="3" style="color:#94a3b8; padding:15px;">දත්ත හමු නොවීය. (නමක් හෝ ID එකක් ටයිප් කරන්න, නැතහොත් "සම්පූර්ණ ලැයිස්තුව පෙන්වන්න" ඔබන්න)</td></tr>`;
             }
         }
 
