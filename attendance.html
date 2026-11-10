@@ -81,17 +81,13 @@
         </div>
     </div>
 
-    <!-- 5. මුදල් ගෙවීම් -->
+    <!-- 5. මුදල් ගෙවීම් (Quick Search සමග) -->
     <div class="container">
         <h3>💰 මුදල් ගෙවීම් කළමනාකරණය</h3>
-        <select id="pay-filter-inst" onchange="renderPaymentList()"></select>
-        <select id="pay-filter-grade" onchange="renderPaymentList()">
-            <option value="6 වසර">6 වසර</option><option value="7 වසර">7 වසර</option><option value="8 වසර">8 වසර</option>
-            <option value="9 වසර">9 වසර</option><option value="10 වසර">10 වසර</option><option value="11 වසර">11 වසර</option>
-        </select>
+        <input type="text" id="pay-search-input" placeholder="🔍 ළමයාගේ නම හෝ ID එක ගහලා ක්ෂණිකව සොයන්න..." onkeyup="renderPaymentList()">
         <div class="table-responsive">
             <table>
-                <thead><tr><th style="width:40%">නම</th><th style="width:30%">තත්ත්වය</th><th style="width:30%">ගෙවීම්</th></tr></thead>
+                <thead><tr><th style="width:45%">නම / විස්තරය</th><th style="width:25%">තත්ත්වය</th><th style="width:30%">ගෙවීම්</th></tr></thead>
                 <tbody id="payment-list-table"></tbody>
             </table>
         </div>
@@ -195,12 +191,14 @@
             if(stdData) {
                 stdData.forEach(s => {
                     if(s.id) {
+                        let paidVal = String(s.paid || "").trim().toLowerCase();
+                        let isPaid = paidVal === "true" || paidVal === "ගෙවා ඇත" || s.paid === true;
                         students[String(s.id)] = {
                             name: s.name || '',
                             phone: s.phone || '',
                             grade: s.grade || '',
                             inst: s.inst || '',
-                            paid: s.paid === true || s.paid === "TRUE" || s.paid === "true" || s.paid === "ගෙවා ඇත"
+                            paid: isPaid
                         };
                     }
                 });
@@ -232,7 +230,7 @@
 
         window.populateInstitutes = function() {
             let options = institutes.map(i => `<option value="${i}">${i}</option>`).join('');
-            ['std-inst', 'filter-att-inst', 'filter-manage-inst', 'delete-inst-select', 'pay-filter-inst'].forEach(id => {
+            ['std-inst', 'filter-att-inst', 'filter-manage-inst', 'delete-inst-select'].forEach(id => {
                 let el = document.getElementById(id);
                 if(el) el.innerHTML = options;
             });
@@ -292,7 +290,7 @@
             document.getElementById('qr-student-id').innerText = "ID: " + id;
             document.getElementById('qrcode-container').style.display = 'block';
 
-            await apiCall({ sheet: 'students', action: 'add', row: [id, name, phone, grade, inst, false] });
+            await apiCall({ sheet: 'students', action: 'add', row: [id, name, phone, grade, inst, "ගෙවා නැත"] });
             renderStudentList();
             renderPaymentList();
             alert("ළමයා සාර්ථකව ලියාපදිංචි කර QR කේතය සාදන ලදී!");
@@ -359,28 +357,48 @@
             document.getElementById('manual-search-results').innerHTML = '';
         }
 
+        // ක්ෂණික සෙවුම් පහසුකම සහ සිංහලෙන් ගෙවීම් පෙන්වීම
         window.renderPaymentList = function() {
             let tbody = document.getElementById('payment-list-table'); if(!tbody) return; tbody.innerHTML = '';
-            let instEl = document.getElementById('pay-filter-inst');
-            let gradeEl = document.getElementById('pay-filter-grade');
-            if(!instEl || !gradeEl) return;
+            let searchInput = document.getElementById('pay-search-input');
+            if(!searchInput) return;
             
-            let inst = instEl.value;
-            let grade = gradeEl.value;
+            let query = searchInput.value.toLowerCase().trim();
+            if(!query) {
+                tbody.innerHTML = `<tr><td colspan="3" style="color:#94a3b8; padding:15px;">🔍 සෙවීමට ළමයාගේ නම හෝ ID එක ටයිප් කරන්න...</td></tr>`;
+                return;
+            }
 
+            let count = 0;
             Object.keys(students).forEach(id => {
-                if(students[id].inst === inst && students[id].grade === grade) {
-                    let status = students[id].paid ? '<span style="color:var(--accent);">ගෙවා ඇත</span>' : '<span style="color:var(--danger);">ගෙවා නැත</span>';
-                    let btnText = students[id].paid ? '❌ අවලංගු කරන්' : '✅ මාක් කරන්න';
-                    tbody.innerHTML += `<tr><td>${students[id].name}</td><td>${status}</td><td><button class="btn btn-secondary" style="padding:2px 5px; font-size:11px;" onclick="togglePayment('${id}')">${btnText}</button></td></tr>`;
+                let s = students[id];
+                if(id.toLowerCase().includes(query) || s.name.toLowerCase().includes(query)) {
+                    count++;
+                    let statusText = s.paid ? "ගෙවා ඇත" : "ගෙවා නැත";
+                    let statusColor = s.paid ? "var(--accent)" : "var(--danger)";
+                    let btnText = s.paid ? '❌ අවලංගු කරන්න' : '✅ ගෙව්වා ලෙස මාක් කරන්න';
+                    let btnClass = s.paid ? 'btn btn-danger' : 'btn btn-success';
+                    
+                    tbody.innerHTML += `
+                        <tr>
+                            <td style="text-align:left; padding-left:8px;"><b>${s.name}</b><br><small style="color:#94a3b8;">${id} | ${s.grade} (${s.inst})</small></td>
+                            <td><span style="color:${statusColor}; font-weight:bold;">${statusText}</span></td>
+                            <td><button class="${btnClass}" style="padding:6px 10px; font-size:11px; width:auto;" onclick="togglePayment('${id}')">${btnText}</button></td>
+                        </tr>
+                    `;
                 }
             });
+
+            if(count ===0) {
+                tbody.innerHTML = `<tr><td colspan="3" style="color:#ef4444; padding:15px;">සැමදුම් නමකට අදාළ ළමයෙක් හමු නොවීය.</td></tr>`;
+            }
         }
 
         window.togglePayment = async function(id) {
             students[id].paid = !students[id].paid;
             renderPaymentList();
-            await apiCall({ sheet: 'students', action: 'update', id: id, row: [id, students[id].name, students[id].phone, students[id].grade, students[id].inst, students[id].paid] });
+            let sheetTextStatus = students[id].paid ? "ගෙවා ඇත" : "ගෙවා නැත";
+            await apiCall({ sheet: 'students', action: 'update', id: id, row: [id, students[id].name, students[id].phone, students[id].grade, students[id].inst, sheetTextStatus] });
         }
 
         window.renderTable = function() {
@@ -463,7 +481,8 @@
                 for(let id of Object.keys(students)) {
                     if(students[id].grade === f) {
                         students[id].grade = t;
-                        await apiCall({ sheet: 'students', action: 'update', id: id, row: [id, students[id].name, students[id].phone, students[id].grade, students[id].inst, students[id].paid] });
+                        let textStatus = students[id].paid ? "ගෙවා ඇත" : "ගෙවා නැත";
+                        await apiCall({ sheet: 'students', action: 'update', id: id, row: [id, students[id].name, students[id].phone, students[id].grade, students[id].inst, textStatus] });
                     }
                 }
                 renderStudentList();
