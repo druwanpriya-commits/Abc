@@ -149,7 +149,7 @@
     </div>
 
     <script>
-        const API_URL = "https://script.google.com/macros/s/AKfycbw0v9UwdpBmaGTr8Wf4VbdvNIv40oZDE42kcvZxs-eEXXf7PfUVCsi0-xivgigJh6EHYg/exec";
+        const API_URL = "https://script.google.com/macros/s/AKfycbxY9DgUqhZdO6nnc0WoeNjry9kgK9Dr8SXc1-jnve_UYxW0nM24u9zcV3FlKyEzt2M9nQ/exec";
 
         let institutes = ["විමන්සා", "නැණස"];
         let students = {};
@@ -157,7 +157,7 @@
 
         async function apiCall(payload) {
             try {
-                let response = await fetch(API_URL, {
+                await fetch(API_URL, {
                     method: 'POST',
                     mode: 'no-cors',
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -200,7 +200,7 @@
                             phone: s.phone || '',
                             grade: s.grade || '',
                             inst: s.inst || '',
-                            paid: s.paid === true || s.paid === "TRUE" || s.paid === "true"
+                            paid: s.paid === true || s.paid === "TRUE" || s.paid === "true" || s.paid === "ගෙවා ඇත"
                         };
                     }
                 });
@@ -236,6 +236,9 @@
                 let el = document.getElementById(id);
                 if(el) el.innerHTML = options;
             });
+            renderPaymentList();
+            renderStudentList();
+            renderTable();
         }
 
         window.addInstitute = async function() {
