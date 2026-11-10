@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>පන්ති පැමිණීම් සහ කළමනාකරණ පද්ධතිය - Cloud Connected</title>
+    <title>පන්ති පැමිණීම් සහ කළමනාකරණ පද්ධතිය - Google Sheets Connected</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
@@ -22,9 +22,12 @@
         th { background: #334155; }
         #qr-display-box { background: #ffffff; color: #000000; padding: 15px; border-radius: 8px; display: inline-block; margin-top: 10px; text-align: center; }
         #qrcode img { display: block; margin: 0 auto; }
+        #loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15,23,42,0.8); display: flex; justify-content: center; align-items: center; z-index: 9999; color: white; font-size: 18px; font-weight: bold; }
     </style>
 </head>
 <body>
+    <div id="loading-overlay">දත්ත සමග සම්බන්ධ වෙමින් පවතී... ස්වල්ප මොහොතක් රැඳී සිටින්න</div>
+
     <!-- 1. QR පැමිණීම -->
     <div class="container">
         <h2>📷 QR පැමිණීම</h2>
@@ -145,51 +148,87 @@
         </div>
     </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, doc, setDoc, deleteDoc, getDocs, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyDWtZbd807Lbl-NDkHiFWij0jcowHP6eCQ",
-            authDomain: "attendance-ffb99.firebaseapp.com",
-            projectId: "attendance-ffb99",
-            storageBucket: "attendance-ffb99.firebasestorage.app",
-            messagingSenderId: "1011827234098",
-            appId: "1:1011827234098:web:db30c7daf0607924f5f32b",
-            measurementId: "G-TKDY181B1S"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
+    <script>
+        const API_URL = "https://script.google.com/macros/s/AKfycbzCCq7JnkA_048mpr7VR1kTBxhy7U9M_0yQAp4LogSvWea12BPcSrGgR3d_csEtOofc/exec";
 
         let institutes = ["විමන්සා", "නැණස"];
         let students = {};
         let attendance = [];
 
-        onSnapshot(collection(db, "institutes"), (snapshot) => {
-            if(!snapshot.empty) {
-                institutes = [];
-                snapshot.forEach(docSnap => institutes.push(docSnap.data().name));
+        async function apiCall(payload) {
+            try {
+                let response = await fetch(API_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify(payload)
+                });
+                return true;
+            } catch (e) {
+                console.error("API Error: ", e);
+                return false;
+            }
+        }
+
+        async function fetchSheetData(sheetName) {
+            try {
+                let response = await fetch(API_URL + "?sheet=" + sheetName);
+                let result = await response.json();
+                if(result.status === "success") {
+                    return result.data;
+                }
+            } catch(e) {
+                console.error("Fetch Error for " + sheetName, e);
+            }
+            return [];
+        }
+
+        async function loadAllData() {
+            let instData = await fetchSheetData("institutes");
+            if(instData && instData.length > 0) {
+                institutes = instData.map(i => i.name).filter(Boolean);
             }
             populateInstitutes();
-        }, (error) => { console.log("Institute Load Error: ", error); });
 
-        onSnapshot(collection(db, "students"), (snapshot) => {
+            let stdData = await fetchSheetData("students");
             students = {};
-            snapshot.forEach(docSnap => {
-                students[docSnap.id] = docSnap.data();
-            });
+            if(stdData) {
+                stdData.forEach(s => {
+                    if(s.id) {
+                        students[String(s.id)] = {
+                            name: s.name || '',
+                            phone: s.phone || '',
+                            grade: s.grade || '',
+                            inst: s.inst || '',
+                            paid: s.paid === true || s.paid === "TRUE" || s.paid === "true"
+                        };
+                    }
+                });
+            }
             renderStudentList();
             renderPaymentList();
-        }, (error) => { console.log("Student Load Error: ", error); });
 
-        onSnapshot(collection(db, "attendance"), (snapshot) => {
+            let attData = await fetchSheetData("attendance");
             attendance = [];
-            snapshot.forEach(docSnap => {
-                attendance.push(docSnap.data());
-            });
+            if(attData) {
+                attendance = attData.map(a => ({
+                    id: String(a.id || ''),
+                    name: a.name || '',
+                    phone: a.phone || '',
+                    time: a.time || '',
+                    date: a.date || '',
+                    grade: a.grade || '',
+                    inst: a.inst || ''
+                }));
+            }
             renderTable();
-        }, (error) => { console.log("Attendance Load Error: ", error); });
+
+            document.getElementById('loading-overlay').style.display = 'none';
+        }
+
+        window.onload = function() {
+            loadAllData();
+        }
 
         window.populateInstitutes = function() {
             let options = institutes.map(i => `<option value="${i}">${i}</option>`).join('');
@@ -203,18 +242,24 @@
             let name = document.getElementById('new-inst-name').value.trim();
             if(!name) { alert("ආයතනයේ නම ඇතුළත් කරන්න."); return; }
             if(institutes.includes(name)) { alert("මෙම ආයතනය දැනටමත් ඇත."); return; }
-            try {
-                await setDoc(doc(db, "institutes", name), { name: name });
-                document.getElementById('new-inst-name').value = '';
-                alert("ආයතනය එකතු කරන ලදී!");
-            } catch(e) { alert("දෝෂයක් සිදු විය: " + e.message); }
+            
+            institutes.push(name);
+            populateInstitutes();
+            document.getElementById('new-inst-name').value = '';
+            
+            await apiCall({ sheet: 'institutes', action: 'add', row: [name] });
+            alert("ආයතනය එකතු කරන ලදී!");
+            loadAllData();
         }
 
         window.deleteInstitute = async function() {
             let name = document.getElementById('delete-inst-select').value;
             if(institutes.length <= 1) { alert("අඩුම තරමේ එක ආයතනයක්වත් තිබිය යුතුය."); return; }
             if(confirm(`"${name}" ආයතනය මකන්නද?`)) {
-                try { await deleteDoc(doc(db, "institutes", name)); } catch(e) { alert(e.message); }
+                institutes = institutes.filter(i => i !== name);
+                populateInstitutes();
+                await apiCall({ sheet: 'institutes', action: 'delete', id: name });
+                loadAllData();
             }
         }
 
@@ -227,30 +272,27 @@
             
             if(!id || !name) { alert("කරුණාකර ID එක සහ නම ඇතුළත් කරන්න."); return; }
             
-            let studentData = { name, phone, grade, inst, paid: false };
+            students[id] = { name, phone, grade, inst, paid: false };
             
-            try {
-                await setDoc(doc(db, "students", id), studentData);
-                
-                let qrContainer = document.getElementById("qrcode");
-                qrContainer.innerHTML = "";
-                new QRCode(qrContainer, {
-                    text: id,
-                    width: 180,
-                    height: 180,
-                    colorDark: "#000000",
-                    colorLight: "#ffffff",
-                    correctLevel: QRCode.CorrectLevel.H
-                });
-                
-                document.getElementById('qr-student-name').innerText = name;
-                document.getElementById('qr-student-id').innerText = "ID: " + id;
-                
-                document.getElementById('qrcode-container').style.display = 'block';
-                alert("ළමයා සාර්ථකව ලියාපදිංචි කර QR කේතය සාදන ලදී!");
-            } catch(e) {
-                alert("ළමයා ඇතුළත් කිරීම අසාර්ථකයි: " + e.message);
-            }
+            let qrContainer = document.getElementById("qrcode");
+            qrContainer.innerHTML = "";
+            new QRCode(qrContainer, {
+                text: id,
+                width: 180,
+                height: 180,
+                colorDark: "#000000",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H
+            });
+            
+            document.getElementById('qr-student-name').innerText = name;
+            document.getElementById('qr-student-id').innerText = "ID: " + id;
+            document.getElementById('qrcode-container').style.display = 'block';
+
+            await apiCall({ sheet: 'students', action: 'add', row: [id, name, phone, grade, inst, false] });
+            renderStudentList();
+            renderPaymentList();
+            alert("ළමයා සාර්ථකව ලියාපදිංචි කර QR කේතය සාදන ලදී!");
         }
 
         window.processAttendance = async function(studentId) {
@@ -263,18 +305,18 @@
             
             if(!alreadyMarked) {
                 let attRecord = { id: studentId, name: std.name, phone: std.phone, time, date, grade: std.grade, inst: std.inst };
-                let docId = studentId + "_" + date.replaceAll('/', '-');
-                try {
-                    await setDoc(doc(db, "attendance", docId), attRecord);
-                    
-                    if(std.phone) {
-                        window.location.href = `sms:${std.phone}?body=ඔබගේ දරුවා වන ${std.name} අද දින ${time} ට පන්තියට පැමිණියේය.`;
-                    }
-                    
-                    let statusBox = document.getElementById('status-box');
-                    statusBox.style.display = 'block';
-                    statusBox.innerHTML = `✅ <b style="color:var(--accent);">${std.name}</b> පැමිණියා! (${time})`;
-                } catch(e) { alert("පැමිණීම සටහන් කිරීම අසාර්ථකයි: " + e.message); }
+                attendance.push(attRecord);
+                renderTable();
+
+                await apiCall({ sheet: 'attendance', action: 'add', row: [studentId, std.name, std.grade, std.inst, date, time] });
+                
+                if(std.phone) {
+                    window.location.href = `sms:${std.phone}?body=ඔබගේ දරුවා වන ${std.name} අද දින ${time} ට පන්තියට පැමිණියේය.`;
+                }
+                
+                let statusBox = document.getElementById('status-box');
+                statusBox.style.display = 'block';
+                statusBox.innerHTML = `✅ <b style="color:var(--accent);">${std.name}</b> පැමිණියා! (${time})`;
             } else {
                 let statusBox = document.getElementById('status-box');
                 statusBox.style.display = 'block';
@@ -333,10 +375,9 @@
         }
 
         window.togglePayment = async function(id) {
-            try {
-                let newPaidStatus = !students[id].paid;
-                await updateDoc(doc(db, "students", id), { paid: newPaidStatus });
-            } catch(e) { alert(e.message); }
+            students[id].paid = !students[id].paid;
+            renderPaymentList();
+            await apiCall({ sheet: 'students', action: 'update', id: id, row: [id, students[id].name, students[id].phone, students[id].grade, students[id].inst, students[id].paid] });
         }
 
         window.renderTable = function() {
@@ -402,19 +443,13 @@
             });
         }
 
-        // ළමයා ආරක්ෂිතව මකා දැමීම (Delete Student)
         window.deleteStudent = async function(id) {
             if(confirm(`මෙම ළමයා (ID: ${id}) පද්ධතියෙන් සහ ඩේටාබේස් එකෙන් සම්පූර්ණයෙන්ම ඉවත් කරන්නද?`)) {
-                try {
-                    await deleteDoc(doc(db, "students", id));
-                    // ලෝකල් ඔබ්ජෙක්ට් එකෙන්ද ඉවත් කිරීම
-                    delete students[id];
-                    renderStudentList();
-                    renderPaymentList();
-                    alert("ළමයා සාර්ථකව මකා දමන ලදී!");
-                } catch(e) { 
-                    alert("මකා දැමීමේ දෝෂයක් ඇති විය: " + e.message); 
-                }
+                delete students[id];
+                renderStudentList();
+                renderPaymentList();
+                await apiCall({ sheet: 'students', action: 'delete', id: id });
+                alert("ළමයා සාර්ථකව මකා දමන ලදී!");
             }
         }
 
@@ -422,18 +457,24 @@
             let f = document.getElementById('promote-from').value;
             let t = document.getElementById('promote-to').value;
             if(confirm(`${f} සිට සියලුම ළමුන් ${t} වෙත උසස් කරනවාද?`)) {
-                try {
-                    for(let id of Object.keys(students)) {
-                        if(students[id].grade === f) {
-                            await updateDoc(doc(db, "students", id), { grade: t });
-                        }
+                for(let id of Object.keys(students)) {
+                    if(students[id].grade === f) {
+                        students[id].grade = t;
+                        await apiCall({ sheet: 'students', action: 'update', id: id, row: [id, students[id].name, students[id].phone, students[id].grade, students[id].inst, students[id].paid] });
                     }
-                    alert("සාර්ථකව උසස් කරන ලදී!");
-                } catch(e) { alert(e.message); }
+                }
+                renderStudentList();
+                renderPaymentList();
+                alert("සාර්ථකව උසස් කරන ලදී!");
             }
         }
 
-        window.resetStudentForm = function() { location.reload(); }
+        window.resetStudentForm = function() {
+            document.getElementById('std-id').value = '';
+            document.getElementById('std-name').value = '';
+            document.getElementById('std-phone').value = '';
+            document.getElementById('qrcode-container').style.display = 'none';
+        }
 
         window.downloadQR = function() {
             let id = document.getElementById('std-id').value.trim();
