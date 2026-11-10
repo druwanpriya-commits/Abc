@@ -23,7 +23,6 @@
         #qr-display-box { background: #ffffff; color: #000000; padding: 15px; border-radius: 8px; display: inline-block; margin-top: 10px; text-align: center; }
         #qrcode img { display: block; margin: 0 auto; }
         
-        /* ලෝඩින් මැසේජ් එක තිරයේ හරියටම මැදට සහ ලස්සනට පෙන්වීමට */
         #loading-overlay { 
             position: fixed; 
             top: 0; 
@@ -42,6 +41,7 @@
             padding: 20px;
             box-sizing: border-box;
         }
+        .filter-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
     </style>
 </head>
 <body>
@@ -84,7 +84,7 @@
         </select>
         <input type="text" id="std-id" placeholder="ID අංකය">
         <input type="text" id="std-name" placeholder="නම">
-        <input type="tel" id="std-phone" placeholder="දුරකථන අංකය (07xxxxxxxx)">
+        <input type="tel" id="std-phone" placeholder="දුරකථන අංකය (07xxxxxxxx - අනිවාර්ය නැත)">
         <button class="btn" onclick="registerAndGenerateQR()">QR සාදන්න</button>
         <button class="btn btn-secondary" onclick="resetStudentForm()">🔄 අලුත් ළමයෙක්</button>
         
@@ -100,19 +100,57 @@
         </div>
     </div>
 
-    <!-- 5. මුදල් ගෙවීම් (Search සහ Full List බටන් සමග) -->
+    <!-- 5. මුදල් ගෙවීම් (Year & Month selection සහ Excel Export සමග) -->
     <div class="container">
         <h3>💰 මුදල් ගෙවීම් කළමනාකරණය</h3>
-        <label>ආයතනය තෝරන්න:</label>
-        <select id="pay-filter-inst" onchange="renderPaymentList()"></select>
-        <label>ශ්‍රේණිය තෝරන්න:</label>
-        <select id="pay-filter-grade" onchange="renderPaymentList()">
-            <option value="6 වසර">6 වසර</option><option value="7 වසර">7 වසර</option><option value="8 වසර">8 වසර</option>
-            <option value="9 වසර">9 වසර</option><option value="10 වසර">10 වසර</option><option value="11 වසර">11 වසර</option>
-        </select>
         
+        <div class="filter-grid">
+            <div>
+                <label>ආයතනය:</label>
+                <select id="pay-filter-inst" onchange="renderPaymentList()"></select>
+            </div>
+            <div>
+                <label>ශ්‍රේණිය:</label>
+                <select id="pay-filter-grade" onchange="renderPaymentList()">
+                    <option value="6 වසර">6 වසර</option><option value="7 වසර">7 වසර</option><option value="8 වසර">8 වසර</option>
+                    <option value="9 වසර">9 වසර</option><option value="10 වසර">10 වසර</option><option value="11 වසර">11 වසර</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="filter-grid">
+            <div>
+                <label>අවුරුද්ද තෝරන්න:</label>
+                <select id="pay-filter-year" onchange="renderPaymentList()">
+                    <option value="2026">2026</option>
+                    <option value="2027">2027</option>
+                    <option value="2028">2028</option>
+                    <option value="2029">2029</option>
+                    <option value="2030">2030</option>
+                </select>
+            </div>
+            <div>
+                <label>මාසය තෝරන්න:</label>
+                <select id="pay-filter-month" onchange="renderPaymentList()">
+                    <option value="ජනවාරි">ජනවාරි</option>
+                    <option value="පෙබරවාරි">පෙබරවාරි</option>
+                    <option value="මාර්තු">මාර්තු</option>
+                    <option value="අප්‍රේල්">අප්‍රේල්</option>
+                    <option value="මැයි">මැයි</option>
+                    <option value="ජූනි">ජූනි</option>
+                    <option value="ජූලි">ජූලි</option>
+                    <option value="අගෝස්තු">අගෝස්තු</option>
+                    <option value="සැප්තැම්බර්">සැප්තැම්බර්</option>
+                    <option value="ඔක්තෝබර්">ඔක්තෝබර්</option>
+                    <option value="නොවැම්බර්">නොවැම්බර්</option>
+                    <option value="දෙසැම්බර්">දෙසැම්බර්</option>
+                </select>
+            </div>
+        </div>
+
         <input type="text" id="pay-search-input" placeholder="🔍 නම හෝ ID එක ගහලා සොයන්න..." onkeyup="renderPaymentList()">
         <button class="btn btn-secondary" onclick="toggleFullList()">📋 සම්පූර්ණ ලැයිස්තුව පෙන්වන්න / වසන්න</button>
+        <button class="btn btn-success" style="margin-top:8px;" onclick="exportPaymentsToExcel()">📥 මුදල් වාර්තාව බාගත කරන්න (.CSV)</button>
 
         <div class="table-responsive">
             <table>
@@ -140,7 +178,7 @@
             <option value="සියල්ල">සියලුම පන්ති</option><option value="6 වසර">6 වසර</option><option value="7 වසර">7 වසර</option><option value="8 වසර">8 වසර</option>
             <option value="9 වසර">9 වසර</option><option value="10 වසර">10 වසර</option><option value="11 වසර">11 වසර</option>
         </select>
-        <button class="btn btn-success" style="margin-bottom:10px;" onclick="exportToExcel()">📥 Excel බාගත කරන්න (.CSV)</button>
+        <button class="btn btn-success" style="margin-bottom:10px;" onclick="exportToExcel()">📥 පැමිණීම් වාර්තාව බාගත කරන්න (.CSV)</button>
         <div class="table-responsive">
             <table>
                 <thead><tr><th style="width:50%">නම</th><th style="width:30%">වේලාව</th><th style="width:20%">SMS</th></tr></thead>
@@ -181,6 +219,10 @@
         let attendance = [];
         let showAllListFlag = false;
 
+        const monthNamesSinhala = ["ජනවාරි", "පෙබරවාරි", "මාර්තු", "අප්‍රේල්", "මැයි", "ජූනි", "ජූලි", "අගෝස්තු", "සැප්තැම්බර්", "ඔක්තෝබර්", "නොවැම්බර්", "දෙසැම්බර්"];
+        let currentYearVal = new Date().getFullYear().toString();
+        let currentMonthVal = monthNamesSinhala[new Date().getMonth()];
+
         async function apiCall(payload) {
             try {
                 await fetch(API_URL, {
@@ -210,6 +252,11 @@
         }
 
         async function loadAllData() {
+            let yEl = document.getElementById('pay-filter-year');
+            let mEl = document.getElementById('pay-filter-month');
+            if(yEl) yEl.value = currentYearVal;
+            if(mEl) mEl.value = currentMonthVal;
+
             let instData = await fetchSheetData("institutes");
             if(instData && instData.length > 0) {
                 institutes = instData.map(i => i.name).filter(Boolean);
@@ -221,14 +268,24 @@
             if(stdData) {
                 stdData.forEach(s => {
                     if(s.id) {
-                        let paidVal = String(s.paid || "").trim().toLowerCase();
-                        let isPaid = paidVal === "true" || paidVal === "ගෙවා ඇත" || s.paid === true;
+                        let paymentsObj = {};
+                        if(s.payments) {
+                            try {
+                                paymentsObj = typeof s.payments === 'object' ? s.payments : JSON.parse(s.payments);
+                            } catch(e) {
+                                let pVal = String(s.payments).trim().toLowerCase();
+                                if(pVal === "true" || pVal === "ගෙවා ඇත") {
+                                    paymentsObj[`${currentYearVal}_${currentMonthVal}`] = true;
+                                }
+                            }
+                        }
+                        
                         students[String(s.id)] = {
                             name: s.name || '',
                             phone: s.phone || '',
                             grade: s.grade || '',
                             inst: s.inst || '',
-                            paid: isPaid
+                            payments: paymentsObj
                         };
                     }
                 });
@@ -303,7 +360,7 @@
             
             if(!id || !name) { alert("කරුණාකර ID එක සහ නම ඇතුළත් කරන්න."); return; }
             
-            students[id] = { name, phone, grade, inst, paid: false };
+            students[id] = { name, phone, grade, inst, payments: {} };
             
             let qrContainer = document.getElementById("qrcode");
             qrContainer.innerHTML = "";
@@ -320,7 +377,7 @@
             document.getElementById('qr-student-id').innerText = "ID: " + id;
             document.getElementById('qrcode-container').style.display = 'block';
 
-            await apiCall({ sheet: 'students', action: 'add', row: [id, name, phone, grade, inst, "ගෙවා නැත"] });
+            await apiCall({ sheet: 'students', action: 'add', row: [id, name, phone, grade, inst, JSON.stringify({})] });
             renderStudentList();
             renderPaymentList();
             alert("ළමයා සාර්ථකව ලියාපදිංචි කර QR කේතය සාදන ලදී!");
@@ -397,11 +454,17 @@
             let searchInput = document.getElementById('pay-search-input');
             let instEl = document.getElementById('pay-filter-inst');
             let gradeEl = document.getElementById('pay-filter-grade');
-            if(!searchInput || !instEl || !gradeEl) return;
+            let yearEl = document.getElementById('pay-filter-year');
+            let monthEl = document.getElementById('pay-filter-month');
+            
+            if(!searchInput || !instEl || !gradeEl || !yearEl || !monthEl) return;
             
             let query = searchInput.value.toLowerCase().trim();
             let selectedInst = instEl.value;
             let selectedGrade = gradeEl.value;
+            let selectedYear = yearEl.value;
+            let selectedMonth = monthEl.value;
+            let targetKey = `${selectedYear}_${selectedMonth}`;
 
             let sortedIds = Object.keys(students).sort((a, b) => {
                 return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
@@ -415,10 +478,11 @@
                     
                     if(showAllListFlag || matchesQuery) {
                         count++;
-                        let statusText = s.paid ? "ගෙවා ඇත" : "ගෙවා නැත";
-                        let statusColor = s.paid ? "var(--accent)" : "var(--danger)";
-                        let btnText = s.paid ? '❌ අවලංගු කරන්න' : '✅ ගෙව්වා ලෙස මාක් කරන්න';
-                        let btnClass = s.paid ? 'btn btn-danger' : 'btn btn-success';
+                        let isPaidThisMonth = !!(s.payments && s.payments[targetKey]);
+                        let statusText = isPaidThisMonth ? "ගෙවා ඇත" : "ගෙවා නැත";
+                        let statusColor = isPaidThisMonth ? "var(--accent)" : "var(--danger)";
+                        let btnText = isPaidThisMonth ? '❌ අවලංගු කරන්න' : '✅ ගෙව්වා ලෙස මාක් කරන්න';
+                        let btnClass = isPaidThisMonth ? 'btn btn-danger' : 'btn btn-success';
                         
                         tbody.innerHTML += `
                             <tr>
@@ -437,10 +501,72 @@
         }
 
         window.togglePayment = async function(id) {
-            students[id].paid = !students[id].paid;
+            let yearEl = document.getElementById('pay-filter-year');
+            let monthEl = document.getElementById('pay-filter-month');
+            let targetKey = `${yearEl.value}_${monthEl.value}`;
+
+            if(!students[id].payments) students[id].payments = {};
+            
+            if(students[id].payments[targetKey]) {
+                delete students[id].payments[targetKey];
+            } else {
+                students[id].payments[targetKey] = true;
+            }
+
             renderPaymentList();
-            let sheetTextStatus = students[id].paid ? "ගෙවා ඇත" : "ගෙවා නැත";
-            await apiCall({ sheet: 'students', action: 'update', id: id, row: [id, students[id].name, students[id].phone, students[id].grade, students[id].inst, sheetTextStatus] });
+            
+            let jsonStringPayments = JSON.stringify(students[id].payments);
+            await apiCall({ sheet: 'students', action: 'update', id: id, row: [id, students[id].name, students[id].phone, students[id].grade, students[id].inst, jsonStringPayments] });
+        }
+
+        // මුදල් ගෙවීම් වාර්තාව Excel (.CSV) එකකට ඩවුන්ලෝඩ් කරගැනීම
+        window.exportPaymentsToExcel = function() {
+            let instEl = document.getElementById('pay-filter-inst');
+            let gradeEl = document.getElementById('pay-filter-grade');
+            let yearEl = document.getElementById('pay-filter-year');
+            let monthEl = document.getElementById('pay-filter-month');
+            
+            let selectedInst = instEl.value;
+            let selectedGrade = gradeEl.value;
+            let selectedYear = yearEl.value;
+            let selectedMonth = monthEl.value;
+            let targetKey = `${selectedYear}_${selectedMonth}`;
+
+            let sortedIds = Object.keys(students).sort((a, b) => {
+                return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
+            });
+
+            let filteredList = [];
+            sortedIds.forEach(id => {
+                let s = students[id];
+                if(s.inst === selectedInst && s.grade === selectedGrade) {
+                    let isPaidThisMonth = !!(s.payments && s.payments[targetKey]);
+                    filteredList.push({
+                        id: id,
+                        name: s.name,
+                        phone: s.phone,
+                        grade: s.grade,
+                        inst: s.inst,
+                        status: isPaidThisMonth ? "ගෙවා ඇත" : "ගෙවා නැත"
+                    });
+                }
+            });
+
+            if(filteredList.length === 0) { 
+                alert("බාගත කිරීමට ළමුන්ගේ දත්ත නොමැත."); 
+                return; 
+            }
+
+            let csv = `ID,නම,දුරකථන අංකය,පන්තිය,ආයතනය,මාසය (${selectedMonth} ${selectedYear}),තත්ත්වය\n`;
+            filteredList.forEach(item => {
+                csv += `"${item.id}","${item.name}","${item.phone}","${item.grade}","${item.inst}","${selectedMonth} ${selectedYear}","${item.status}"\n`;
+            });
+
+            let blob = new Blob(["\ufeff", csv], { type: 'text/csv;charset=utf-8;' });
+            let link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = `Payment_Report_${selectedInst}_${selectedGrade}_${selectedYear}_${selectedMonth}.csv`;
+            link.click();
         }
 
         window.renderTable = function() {
@@ -458,7 +584,7 @@
         }
 
         window.exportToExcel = function() {
-            if(attendance.length === 0) { alert("බාගත කිරීමට දත්ත නොමැත."); return; }
+            if(attendance.length === 0) { alert("බාගත කිරීමට පැමිණීම් දත්ත නොමැත."); return; }
             let csv = "ID,නම,පන්තිය,ආයතනය,දිනය,වේලාව\n";
             attendance.forEach(a => {
                 csv += `"${a.id}","${a.name}","${a.grade}","${a.inst}","${a.date}","${a.time}"\n`;
@@ -523,8 +649,8 @@
                 for(let id of Object.keys(students)) {
                     if(students[id].grade === f) {
                         students[id].grade = t;
-                        let textStatus = students[id].paid ? "ගෙවා ඇත" : "ගෙවා නැත";
-                        await apiCall({ sheet: 'students', action: 'update', id: id, row: [id, students[id].name, students[id].phone, students[id].grade, students[id].inst, textStatus] });
+                        let jsonStringPayments = JSON.stringify(students[id].payments || {});
+                        await apiCall({ sheet: 'students', action: 'update', id: id, row: [id, students[id].name, students[id].phone, students[id].grade, students[id].inst, jsonStringPayments] });
                     }
                 }
                 renderStudentList();
