@@ -100,7 +100,7 @@
         </div>
     </div>
 
-    <!-- 5. මුදල් ගෙවීම් (Year & Month selection සහ Excel Export සමග) -->
+    <!-- 5. මුදල් ගෙවීම් කළමනාකරණය -->
     <div class="container">
         <h3>💰 මුදල් ගෙවීම් කළමනාකරණය</h3>
         
@@ -152,11 +152,13 @@
         <button class="btn btn-secondary" onclick="toggleFullList()">📋 සම්පූර්ණ ලැයිස්තුව පෙන්වන්න / වසන්න</button>
         <button class="btn btn-success" style="margin-top:8px;" onclick="exportPaymentsToExcel()">📥 මුදල් වාර්තාව බාගත කරන්න (.CSV)</button>
 
-        <div class="table-responsive">
-            <table>
-                <thead><tr><th style="width:45%">නම / විස්තරය</th><th style="width:25%">තත්ත්වය</th><th style="width:30%">ගෙවීම්</th></tr></thead>
-                <tbody id="payment-list-table"></tbody>
-            </table>
+        <div id="payment-table-wrapper" style="display: none;">
+            <div class="table-responsive">
+                <table>
+                    <thead><tr><th style="width:45%">නම / විස්තරය</th><th style="width:25%">තත්ත්වය</th><th style="width:30%">ගෙවීම්</th></tr></thead>
+                    <tbody id="payment-list-table"></tbody>
+                </table>
+            </div>
         </div>
     </div>
 
@@ -203,11 +205,15 @@
             <option value="6 වසර">6 වසර</option><option value="7 වසර">7 වසර</option><option value="8 වසර">8 වසර</option>
             <option value="9 වසර">9 වසර</option><option value="10 වසර">10 වසර</option><option value="11 වසර">11 වසර</option>
         </select>
-        <div class="table-responsive">
-            <table>
-                <thead><tr><th style="width:20%">ID</th><th style="width:50%">නම</th><th style="width:30%">මකන්න</th></tr></thead>
-                <tbody id="student-list-table"></tbody>
-            </table>
+        <button class="btn btn-secondary" onclick="toggleStudentList()">📋 ළමුන් ලැයිස්තුව පෙන්වන්න / වසන්න</button>
+        
+        <div id="student-table-wrapper" style="display: none;">
+            <div class="table-responsive">
+                <table>
+                    <thead><tr><th style="width:20%">ID</th><th style="width:50%">නම</th><th style="width:30%">මකන්න</th></tr></thead>
+                    <tbody id="student-list-table"></tbody>
+                </table>
+            </div>
         </div>
     </div>
 
@@ -218,6 +224,7 @@
         let students = {};
         let attendance = [];
         let showAllListFlag = false;
+        let showStudentListFlag = false; // ළමුන් කළමනාකරණ ලැයිස්තුව පෙන්වීම/වැසීම සඳහා
 
         const monthNamesSinhala = ["ජනවාරි", "පෙබරවාරි", "මාර්තු", "අප්‍රේල්", "මැයි", "ජූනි", "ජූලි", "අගෝස්තු", "සැප්තැම්බර්", "ඔක්තෝබර්", "නොවැම්බර්", "දෙසැම්බර්"];
         let currentYearVal = new Date().getFullYear().toString();
@@ -444,12 +451,22 @@
             document.getElementById('manual-search-results').innerHTML = '';
         }
 
+        // මුදල් ගෙවීම් ලැයිස්තුව පෙන්වීම / වසීම
         window.toggleFullList = function() {
             showAllListFlag = !showAllListFlag;
-            renderPaymentList();
+            let wrapper = document.getElementById('payment-table-wrapper');
+            if(wrapper) {
+                wrapper.style.display = showAllListFlag ? 'block' : 'none';
+            }
+            if(showAllListFlag) {
+                renderPaymentList();
+            }
         }
 
         window.renderPaymentList = function() {
+            let wrapper = document.getElementById('payment-table-wrapper');
+            if(!wrapper || wrapper.style.display === 'none') return; // ලැයිස්තුව වැසී ඇත්නම් ඊළඟට යෑම නවත්වයි
+
             let tbody = document.getElementById('payment-list-table'); if(!tbody) return; tbody.innerHTML = '';
             let searchInput = document.getElementById('pay-search-input');
             let instEl = document.getElementById('pay-filter-inst');
@@ -476,7 +493,7 @@
                 if(s.inst === selectedInst && s.grade === selectedGrade) {
                     let matchesQuery = !query || id.toLowerCase().includes(query) || s.name.toLowerCase().includes(query);
                     
-                    if(showAllListFlag || matchesQuery) {
+                    if(matchesQuery) {
                         count++;
                         let isPaidThisMonth = !!(s.payments && s.payments[targetKey]);
                         let statusText = isPaidThisMonth ? "ගෙවා ඇත" : "ගෙවා නැත";
@@ -496,7 +513,7 @@
             });
 
             if(count === 0) {
-                tbody.innerHTML = `<tr><td colspan="3" style="color:#94a3b8; padding:15px;">දත්ත හමු නොවීය. (නමක් හෝ ID එකක් ටයිප් කරන්න, නැතහොත් "සම්පූර්ණ ලැයිස්තුව පෙන්වන්න" ඔබන්න)</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="3" style="color:#94a3b8; padding:15px;">දත්ත හමු නොවීය.</td></tr>`;
             }
         }
 
@@ -519,7 +536,6 @@
             await apiCall({ sheet: 'students', action: 'update', id: id, row: [id, students[id].name, students[id].phone, students[id].grade, students[id].inst, jsonStringPayments] });
         }
 
-        // මුදල් ගෙවීම් වාර්තාව Excel (.CSV) එකකට ඩවුන්ලෝඩ් කරගැනීම
         window.exportPaymentsToExcel = function() {
             let instEl = document.getElementById('pay-filter-inst');
             let gradeEl = document.getElementById('pay-filter-grade');
@@ -616,7 +632,22 @@
             box.innerHTML = `📅 <b>මෙම මාසයේ:</b> මුළු පැමිණීම් <b>${count}</b> කි.`;
         }
 
+        // ළමුන් කළමනාකරණ ලැයිස්තුව පෙන්වීම / වසීම
+        window.toggleStudentList = function() {
+            showStudentListFlag = !showStudentListFlag;
+            let wrapper = document.getElementById('student-table-wrapper');
+            if(wrapper) {
+                wrapper.style.display = showStudentListFlag ? 'block' : 'none';
+            }
+            if(showStudentListFlag) {
+                renderStudentList();
+            }
+        }
+
         window.renderStudentList = function() {
+            let wrapper = document.getElementById('student-table-wrapper');
+            if(!wrapper || wrapper.style.display === 'none') return; // ලැයිස්තුව වැසී ඇත්නම් ඊළඟට යෑම නවත්වයි
+
             let tbody = document.getElementById('student-list-table'); if(!tbody) return; tbody.innerHTML = '';
             let instEl = document.getElementById('filter-manage-inst');
             let gradeEl = document.getElementById('filter-manage-grade');
