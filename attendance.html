@@ -15,6 +15,7 @@
         .btn-danger { background-color: var(--danger); }
         .btn-warning { background-color: var(--warning); color: #000; }
         .btn-secondary { background-color: #64748b; color: white; }
+        .btn-whatsapp { background-color: #25d366; color: white; }
         input, select { width: 100%; padding: 10px; margin: 5px 0 10px 0; border-radius: 6px; border: 1px solid #475569; background: #334155; color: white; box-sizing: border-box; }
         .table-responsive { width: 100%; margin-top: 10px; }
         table { width: 100%; table-layout: fixed; border-collapse: collapse; }
@@ -154,7 +155,7 @@
             </div>
         </div>
 
-        <!-- 📊 මාසික ආදායම් සාරාංශය (Monthly Revenue Dashboard) -->
+        <!-- 📊 මාසික ආදායම් සාරාංශය -->
         <div style="background: #1e293b; border: 1px solid var(--primary); padding: 12px; border-radius: 8px; margin-top: 10px;">
             <div style="font-size: 14px; font-weight: bold; color: var(--primary); margin-bottom: 8px;">📊 මාසික ආදායම් සාරාංශය</div>
             
@@ -218,7 +219,7 @@
         <button class="btn btn-success" style="margin-bottom:10px;" onclick="exportToExcel()">📥 පැමිණීම් වාර්තාව බාගත කරන්න (.CSV)</button>
         <div class="table-responsive">
             <table>
-                <thead><tr><th style="width:50%">නම</th><th style="width:30%">වේලාව</th><th style="width:20%">SMS</th></tr></thead>
+                <thead><tr><th style="width:45%">නම</th><th style="width:30%">වේලාව</th><th style="width:25%">WhatsApp</th></tr></thead>
                 <tbody id="attendance-table"></tbody>
             </table>
         </div>
@@ -237,8 +238,7 @@
         <h3>👨‍🎓 ළමුන් කළමනාකරණය</h3>
         <select id="filter-manage-inst" onchange="renderStudentList()"></select>
         <select id="filter-manage-grade" onchange="renderStudentList()">
-            <option value="6 වසර">6 වසර</option><option value="7 වසර">7 වසර</option><option value="8 වසර">8 වසර</option>
-            <option value="9 වසර">9 වසර</option><option value="10 වසර">10 වසර</option><option value="11 වසර">11 වසර</option>
+            <option value="6 වසර">6 වසර</option><option value="7 වසර">7 වසර</option><option value="8 වසර">8 වසර</option><option value="9 වසර">9 වසර</option><option value="10 වසර">10 වසර</option><option value="11 වසර">11 වසර</option>
         </select>
         <button class="btn btn-secondary" onclick="toggleStudentList()">📋 ළමුන් ලැයිස්තුව පෙන්වන්න / වසන්න</button>
         
@@ -440,8 +440,11 @@
 
                 await apiCall({ sheet: 'attendance', action: 'add', row: [studentId, std.name, std.grade, std.inst, date, time] });
                 
+                // WhatsApp මැසේජ් එක යැවීම සඳහා ස්වයංක්‍රීයව ලින්ක් එක විවෘත වීම
                 if(std.phone) {
-                    window.location.href = `sms:${std.phone}?body=ඔබගේ දරුවා වන ${std.name} අද දින ${time} ට පන්තියට පැමිණියේය.`;
+                    let formattedPhone = std.phone.startsWith('0') ? '94' + std.phone.slice(1) : std.phone;
+                    let msg = encodeURIComponent(`පන්ති පැමිණීම් දැනුම්දීමයි: ඔබගේ දරුවා වන ${std.name} අද දින (${date}) ${time} ට පන්තියට පැමිණියේය. - හිතන අයගේ ගණන් පන්තිය`);
+                    window.open(`https://wa.me/${formattedPhone}?text=${msg}`, '_blank');
                 }
                 
                 let statusBox = document.getElementById('status-box');
@@ -517,7 +520,6 @@
                 return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
             });
 
-            // Calculate Summary Data
             let totalStudentsCount = 0;
             let paidCount = 0;
             let unpaidCount = 0;
@@ -534,7 +536,6 @@
                 }
             });
 
-            // Update Dashboard UI
             document.getElementById('dash-total-students').innerText = totalStudentsCount;
             document.getElementById('dash-paid-count').innerText = paidCount;
             document.getElementById('dash-unpaid-count').innerText = unpaidCount;
@@ -655,7 +656,16 @@
             let grade = gradeEl.value;
 
             attendance.slice().reverse().filter(a => a.inst === inst && (grade === "සියල්ල" || a.grade === grade)).forEach(row => {
-                tbody.innerHTML += `<tr><td>${row.name}</td><td>${row.time}</td><td><a href="sms:${row.phone}?body=ඔබගේ දරුවා ${row.name} පන්තියට පැමිණියේය." style="color:white; text-decoration:none;">📩 Send</a></td></tr>`;
+                let waBtn = '';
+                if(row.phone) {
+                    let formattedPhone = row.phone.startsWith('0') ? '94' + row.phone.slice(1) : row.phone;
+                    let msg = encodeURIComponent(`පන්ති පැමිණීම් දැනුම්දීමයි: ඔබගේ දරුවා වන ${row.name} අද දින (${row.date}) ${row.time} ට පන්තියට පැමිණියේය. - හිතන අයගේ ගණන් පන්තිය`);
+                    waBtn = `<a href="https://wa.me/${formattedPhone}?text=${msg}" target="_blank" class="btn btn-whatsapp" style="padding:4px 8px; font-size:11px; text-decoration:none; display:inline-block; margin:0;">💬 යවන්න</a>`;
+                } else {
+                    waBtn = `<small style="color:#94a3b8;">අංකයක් නැත</small>`;
+                }
+
+                tbody.innerHTML += `<tr><td>${row.name}</td><td>${row.time}</td><td>${waBtn}</td></tr>`;
             });
         }
 
