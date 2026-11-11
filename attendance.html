@@ -148,11 +148,11 @@
             </div>
         </div>
 
-        <input type="text" id="pay-search-input" placeholder="🔍 නම හෝ ID එක ගහලා සොයන්න..." onkeyup="renderPaymentList()">
-        <button class="btn btn-secondary" onclick="toggleFullList()">📋 සම්පූර්ණ ලැයිස්තුව පෙන්වන්න / වසන්න</button>
-        <button class="btn btn-success" style="margin-top:8px;" onclick="exportPaymentsToExcel()">📥 මුදල් වාර්තාව බාගත කරන්න (.CSV)</button>
+        <button class="btn btn-secondary" onclick="togglePaymentList()">📋 ගෙවීම් ලැයිස්තුව පෙන්වන්න / වසන්න</button>
+        <button class="btn btn-success" style="margin-top:6px;" onclick="exportPaymentsToExcel()">📥 මුදල් වාර්තාව බාගත කරන්න (.CSV)</button>
 
-        <div id="payment-table-wrapper" style="display: none;">
+        <div id="payment-table-wrapper" style="display: none; margin-top: 10px;">
+            <input type="text" id="pay-search-input" placeholder="🔍 නිශ්චිත ළමයෙක් සෙවීමට නම හෝ ID එක ගහන්න..." onkeyup="renderPaymentList()">
             <div class="table-responsive">
                 <table>
                     <thead><tr><th style="width:45%">නම / විස්තරය</th><th style="width:25%">තත්ත්වය</th><th style="width:30%">ගෙවීම්</th></tr></thead>
@@ -223,8 +223,8 @@
         let institutes = ["විමන්සා", "නැණස"];
         let students = {};
         let attendance = [];
-        let showAllListFlag = false;
-        let showStudentListFlag = false; // ළමුන් කළමනාකරණ ලැයිස්තුව පෙන්වීම/වැසීම සඳහා
+        let showPaymentListFlag = false;
+        let showStudentListFlag = false;
 
         const monthNamesSinhala = ["ජනවාරි", "පෙබරවාරි", "මාර්තු", "අප්‍රේල්", "මැයි", "ජූනි", "ජූලි", "අගෝස්තු", "සැප්තැම්බර්", "ඔක්තෝබර්", "නොවැම්බර්", "දෙසැම්බර්"];
         let currentYearVal = new Date().getFullYear().toString();
@@ -452,20 +452,20 @@
         }
 
         // මුදල් ගෙවීම් ලැයිස්තුව පෙන්වීම / වසීම
-        window.toggleFullList = function() {
-            showAllListFlag = !showAllListFlag;
+        window.togglePaymentList = function() {
+            showPaymentListFlag = !showPaymentListFlag;
             let wrapper = document.getElementById('payment-table-wrapper');
             if(wrapper) {
-                wrapper.style.display = showAllListFlag ? 'block' : 'none';
+                wrapper.style.display = showPaymentListFlag ? 'block' : 'none';
             }
-            if(showAllListFlag) {
+            if(showPaymentListFlag) {
                 renderPaymentList();
             }
         }
 
         window.renderPaymentList = function() {
             let wrapper = document.getElementById('payment-table-wrapper');
-            if(!wrapper || wrapper.style.display === 'none') return; // ලැයිස්තුව වැසී ඇත්නම් ඊළඟට යෑම නවත්වයි
+            if(!wrapper || wrapper.style.display === 'none') return; // ලැයිස්තුව වැසී ඇත්නම් කෝඩ් එක ක්‍රියාත්මක නොවේ
 
             let tbody = document.getElementById('payment-list-table'); if(!tbody) return; tbody.innerHTML = '';
             let searchInput = document.getElementById('pay-search-input');
@@ -474,9 +474,9 @@
             let yearEl = document.getElementById('pay-filter-year');
             let monthEl = document.getElementById('pay-filter-month');
             
-            if(!searchInput || !instEl || !gradeEl || !yearEl || !monthEl) return;
+            if(!instEl || !gradeEl || !yearEl || !monthEl) return;
             
-            let query = searchInput.value.toLowerCase().trim();
+            let query = searchInput ? searchInput.value.toLowerCase().trim() : '';
             let selectedInst = instEl.value;
             let selectedGrade = gradeEl.value;
             let selectedYear = yearEl.value;
@@ -513,7 +513,7 @@
             });
 
             if(count === 0) {
-                tbody.innerHTML = `<tr><td colspan="3" style="color:#94a3b8; padding:15px;">දත්ත හමු නොවීය.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="3" style="color:#94a3b8; padding:15px;">මෙම ශ්‍රේණියට ළමුන් හමු නොවීය.</td></tr>`;
             }
         }
 
@@ -632,7 +632,6 @@
             box.innerHTML = `📅 <b>මෙම මාසයේ:</b> මුළු පැමිණීම් <b>${count}</b> කි.`;
         }
 
-        // ළමුන් කළමනාකරණ ලැයිස්තුව පෙන්වීම / වසීම
         window.toggleStudentList = function() {
             showStudentListFlag = !showStudentListFlag;
             let wrapper = document.getElementById('student-table-wrapper');
@@ -646,7 +645,7 @@
 
         window.renderStudentList = function() {
             let wrapper = document.getElementById('student-table-wrapper');
-            if(!wrapper || wrapper.style.display === 'none') return; // ලැයිස්තුව වැසී ඇත්නම් ඊළඟට යෑම නවත්වයි
+            if(!wrapper || wrapper.style.display === 'none') return;
 
             let tbody = document.getElementById('student-list-table'); if(!tbody) return; tbody.innerHTML = '';
             let instEl = document.getElementById('filter-manage-inst');
