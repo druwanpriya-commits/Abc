@@ -42,6 +42,12 @@
             box-sizing: border-box;
         }
         .filter-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        
+        /* Dashboard Cards */
+        .dash-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; margin-bottom: 10px; }
+        .dash-card { background: #0f172a; padding: 10px; border-radius: 8px; border: 1px solid #334155; text-align: center; }
+        .dash-card h4 { margin: 0 0 5px 0; font-size: 12px; color: #94a3b8; font-weight: normal; }
+        .dash-card .dash-num { font-size: 18px; font-weight: bold; color: #f8fafc; }
     </style>
 </head>
 <body>
@@ -148,7 +154,36 @@
             </div>
         </div>
 
-        <button class="btn btn-secondary" onclick="togglePaymentList()">📋 ගෙවීම් ලැයිස්තුව පෙන්වන්න / වසන්න</button>
+        <!-- 📊 මාසික ආදායම් සාරාංශය (Monthly Revenue Dashboard) -->
+        <div style="background: #1e293b; border: 1px solid var(--primary); padding: 12px; border-radius: 8px; margin-top: 10px;">
+            <div style="font-size: 14px; font-weight: bold; color: var(--primary); margin-bottom: 8px;">📊 මාසික ආදායම් සාරාංශය</div>
+            
+            <div class="dash-grid">
+                <div class="dash-card">
+                    <h4>මුළු ළමුන් ගණන</h4>
+                    <div id="dash-total-students" class="dash-num">0</div>
+                </div>
+                <div class="dash-card">
+                    <h4>ගෙවූ ළමුන් සංඛ්‍යාව</h4>
+                    <div id="dash-paid-count" class="dash-num" style="color: var(--accent);">0</div>
+                </div>
+                <div class="dash-card">
+                    <h4>නොගෙවූ ළමුන් සංඛ්‍යාව</h4>
+                    <div id="dash-unpaid-count" class="dash-num" style="color: var(--danger);">0</div>
+                </div>
+                <div class="dash-card">
+                    <h4>මුළු ආදායම (රු.)</h4>
+                    <div id="dash-total-revenue" class="dash-num" style="color: var(--warning);">Rs. 0</div>
+                </div>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 8px; margin-top: 5px;">
+                <label style="font-size: 12px; white-space: nowrap; margin:0;">පන්ති ගාස්තුව (රු.):</label>
+                <input type="number" id="class-fee-input" value="1500" placeholder="1500" oninput="renderPaymentList()" style="padding: 6px; margin: 0; font-size: 13px;">
+            </div>
+        </div>
+
+        <button class="btn btn-secondary" style="margin-top:10px;" onclick="togglePaymentList()">📋 ගෙවීම් ලැයිස්තුව පෙන්වන්න / වසන්න</button>
         <button class="btn btn-success" style="margin-top:6px;" onclick="exportPaymentsToExcel()">📥 මුදල් වාර්තාව බාගත කරන්න (.CSV)</button>
 
         <div id="payment-table-wrapper" style="display: none; margin-top: 10px;">
@@ -451,7 +486,6 @@
             document.getElementById('manual-search-results').innerHTML = '';
         }
 
-        // මුදල් ගෙවීම් ලැයිස්තුව පෙන්වීම / වසීම
         window.togglePaymentList = function() {
             showPaymentListFlag = !showPaymentListFlag;
             let wrapper = document.getElementById('payment-table-wrapper');
@@ -464,28 +498,54 @@
         }
 
         window.renderPaymentList = function() {
-            let wrapper = document.getElementById('payment-table-wrapper');
-            if(!wrapper || wrapper.style.display === 'none') return; // ලැයිස්තුව වැසී ඇත්නම් කෝඩ් එක ක්‍රියාත්මක නොවේ
-
-            let tbody = document.getElementById('payment-list-table'); if(!tbody) return; tbody.innerHTML = '';
-            let searchInput = document.getElementById('pay-search-input');
             let instEl = document.getElementById('pay-filter-inst');
             let gradeEl = document.getElementById('pay-filter-grade');
             let yearEl = document.getElementById('pay-filter-year');
             let monthEl = document.getElementById('pay-filter-month');
+            let feeEl = document.getElementById('class-fee-input');
             
             if(!instEl || !gradeEl || !yearEl || !monthEl) return;
             
-            let query = searchInput ? searchInput.value.toLowerCase().trim() : '';
             let selectedInst = instEl.value;
             let selectedGrade = gradeEl.value;
             let selectedYear = yearEl.value;
             let selectedMonth = monthEl.value;
+            let classFee = parseFloat(feeEl ? feeEl.value : 0) || 0;
             let targetKey = `${selectedYear}_${selectedMonth}`;
 
             let sortedIds = Object.keys(students).sort((a, b) => {
                 return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
             });
+
+            // Calculate Summary Data
+            let totalStudentsCount = 0;
+            let paidCount = 0;
+            let unpaidCount = 0;
+
+            sortedIds.forEach(id => {
+                let s = students[id];
+                if(s.inst === selectedInst && s.grade === selectedGrade) {
+                    totalStudentsCount++;
+                    if(s.payments && s.payments[targetKey]) {
+                        paidCount++;
+                    } else {
+                        unpaidCount++;
+                    }
+                }
+            });
+
+            // Update Dashboard UI
+            document.getElementById('dash-total-students').innerText = totalStudentsCount;
+            document.getElementById('dash-paid-count').innerText = paidCount;
+            document.getElementById('dash-unpaid-count').innerText = unpaidCount;
+            document.getElementById('dash-total-revenue').innerText = "Rs. " + (paidCount * classFee).toLocaleString();
+
+            let wrapper = document.getElementById('payment-table-wrapper');
+            if(!wrapper || wrapper.style.display === 'none') return;
+
+            let tbody = document.getElementById('payment-list-table'); if(!tbody) return; tbody.innerHTML = '';
+            let searchInput = document.getElementById('pay-search-input');
+            let query = searchInput ? searchInput.value.toLowerCase().trim() : '';
 
             let count = 0;
             sortedIds.forEach(id => {
