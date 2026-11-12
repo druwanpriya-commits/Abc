@@ -269,21 +269,27 @@
         let currentYearVal = new Date().getFullYear().toString();
         let currentMonthVal = monthNamesSinhala[new Date().getMonth()];
 
+        // ස්ථිරවම බීප් හඬ ඇසීම සඳහා ක්‍රමවේදය
         function playBeep() {
             try {
-                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (!AudioContext) return;
+                const audioCtx = new AudioContext();
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
                 const oscillator = audioCtx.createOscillator();
                 const gainNode = audioCtx.createGain();
 
                 oscillator.type = 'sine';
-                oscillator.frequency.setValueAtTime(800, audioCtx.currentTime);
-                gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                oscillator.frequency.setValueAtTime(880, audioCtx.currentTime); // A5 note (පැහැදිලි හඬක්)
+                gainNode.gain.setValueAtTime(0.15, audioCtx.currentTime);
 
                 oscillator.connect(gainNode);
                 gainNode.connect(audioCtx.destination);
 
                 oscillator.start();
-                oscillator.stop(audioCtx.currentTime + 0.15);
+                oscillator.stop(audioCtx.currentTime + 0.12);
             } catch(e) {
                 console.log("Audio play error:", e);
             }
@@ -459,6 +465,7 @@
                 return;
             }
 
+            // ස්කෑන් වූ වහාම බීප් ශබ්දය නිකුත් කරයි
             playBeep();
 
             let date = new Date().toLocaleDateString();
@@ -470,13 +477,9 @@
                 attendance.push(attRecord);
                 renderTable();
 
+                // ෂීට් එකට පැමිණීම සටහන් කිරීම (ස්වයංක්‍රීය WhatsApp මැසේජ් යැවීම ඉවත් කර ඇත)
                 await apiCall({ sheet: 'attendance', action: 'add', row: [studentId, std.name, std.grade, std.inst, date, time] });
                 
-                if(std.phone) {
-                    let formattedPhone = std.phone.startsWith('0') ? '94' + std.phone.slice(1) : std.phone;
-                    let msg = encodeURIComponent(`පන්ති පැමිණීම් දැනුම්දීමයි: ඔබගේ දරුවා වන ${std.name} අද දින (${date}) ${time} ට පන්තියට පැමිණියේය. - හිතන අයගේ ගණන් පන්තිය`);
-                    window.open(`https://wa.me/${formattedPhone}?text=${msg}`, '_blank');
-                }
                 statusBox.innerHTML = `✅ <b style="color:var(--accent);">${std.name}</b> පැමිණියා! (${time})`;
             } else {
                 statusBox.innerHTML = `⚠️ <b style="color:var(--warning);">${std.name}</b> දැනටමත් පැමිණීම සටහන් කර ඇත!`;
