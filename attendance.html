@@ -9,7 +9,15 @@
     <style>
         :root { --bg-color: #0f172a; --card-bg: #1e293b; --primary: #0284c7; --accent: #10b981; --danger: #ef4444; --warning: #f59e0b; --text: #f8fafc; }
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background-color: var(--bg-color); color: var(--text); margin: 0; padding: 10px; display: flex; flex-direction: column; align-items: center; }
-        .container { width: 100%; max-width: 500px; background: var(--card-bg); padding: 15px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); margin-bottom: 20px; box-sizing: border-box; }
+        .container { width: 100%; max-width: 500px; background: var(--card-bg); padding: 15px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); margin-bottom: 15px; box-sizing: border-box; }
+        
+        /* Navigation Tabs */
+        .nav-tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; width: 100%; max-width: 500px; margin-bottom: 12px; background: #1e293b; padding: 6px; border-radius: 12px; box-sizing: border-box; border: 1px solid #334155; }
+        .tab-btn { background: transparent; color: #94a3b8; border: none; padding: 10px 4px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 12px; transition: 0.2s; text-align: center; }
+        .tab-btn.active { background: var(--primary); color: white; box-shadow: 0 2px 6px rgba(2,132,199,0.4); }
+        .tab-pane { display: none; width: 100%; max-width: 500px; }
+        .tab-pane.active { display: block; }
+
         .btn { background-color: var(--primary); color: white; border: none; padding: 10px; border-radius: 6px; cursor: pointer; width: 100%; margin-top: 8px; font-weight: bold; }
         .btn-success { background-color: var(--accent); }
         .btn-danger { background-color: var(--danger); }
@@ -24,27 +32,17 @@
         #qr-display-box { background: #ffffff; color: #000000; padding: 15px; border-radius: 8px; display: inline-block; margin-top: 10px; text-align: center; }
         #qrcode img { display: block; margin: 0 auto; }
         
+        .badge-free { background: #f59e0b; color: #000; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; }
+        .badge-arrears { background: #ef4444; color: #fff; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; display: inline-block; margin-top: 3px; }
+
         #loading-overlay { 
-            position: fixed; 
-            top: 0; 
-            left: 0; 
-            width: 100%; 
-            height: 100%; 
-            background: rgba(15,23,42,0.9); 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            z-index: 9999; 
-            color: white; 
-            font-size: 16px; 
-            font-weight: bold; 
-            text-align: center;
-            padding: 20px;
-            box-sizing: border-box;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(15,23,42,0.9); display: flex; justify-content: center; 
+            align-items: center; z-index: 9999; color: white; font-size: 16px; 
+            font-weight: bold; text-align: center; padding: 20px; box-sizing: border-box;
         }
         .filter-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
         
-        /* Dashboard Cards */
         .dash-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; margin-bottom: 10px; }
         .dash-card { background: #0f172a; padding: 10px; border-radius: 8px; border: 1px solid #334155; text-align: center; }
         .dash-card h4 { margin: 0 0 5px 0; font-size: 12px; color: #94a3b8; font-weight: normal; }
@@ -54,216 +52,231 @@
 <body>
     <div id="loading-overlay">දත්ත සමග සම්බන්ධ වෙමින් පවතී... ස්වල්ප මොහොතක් රැඳී සිටින්න</div>
 
-    <!-- 1. QR පැමිණීම -->
-    <div class="container">
-        <h2>📷 QR පැමිණීම</h2>
-        <div id="reader"></div>
-        <div id="status-box" style="margin-top:10px; text-align:center; display:none; padding:10px; border-radius:6px; background:#334155;"></div>
+    <!-- Navigation Bar -->
+    <div class="nav-tabs">
+        <button class="tab-btn active" onclick="openTab('pane-att', this)">📷 පැමිණීම</button>
+        <button class="tab-btn" onclick="openTab('pane-pay', this)">💰 ගෙවීම්</button>
+        <button class="tab-btn" onclick="openTab('pane-std', this)">➕ ළමුන්</button>
+        <button class="tab-btn" onclick="openTab('pane-set', this)">⚙️ සැකසුම්</button>
     </div>
 
-    <!-- 2. අතින් පැමිණීම සටහන් කිරීම -->
-    <div class="container" style="border: 1px solid var(--primary);">
-        <h3>✍️ අතින් පැමිණීම සටහන් කිරීම (QR නැතිව)</h3>
-        <input type="text" id="manual-search-input" placeholder="ID අංකය හෝ නම ගහන්න..." onkeyup="searchStudentForManualAtt()">
-        <div id="manual-search-results" style="max-height: 150px; overflow-y: auto; margin-top: 5px;"></div>
-    </div>
+    <!-- TAB 1: පැමිණීම & වාර්තා -->
+    <div id="pane-att" class="tab-pane active">
+        <div class="container">
+            <h2 style="margin-top:0;">📷 QR පැමිණීම</h2>
+            <div id="reader"></div>
+            <div id="status-box" style="margin-top:10px; text-align:center; display:none; padding:10px; border-radius:6px; background:#334155;"></div>
+        </div>
 
-    <!-- 3. ආයතන කළමනාකරණය -->
-    <div class="container">
-        <h3>🏢 ආයතන කළමනාකරණය</h3>
-        <input type="text" id="new-inst-name" placeholder="අලුත් ආයතනයේ නම">
-        <button class="btn btn-success" onclick="addInstitute()">➕ ආයතනය එකතු කරන්න</button>
-        <div style="margin-top: 10px;">
-            <select id="delete-inst-select"></select>
-            <button class="btn btn-danger" onclick="deleteInstitute()">🗑️ තෝරාගත් ආයතනය මකන්න</button>
+        <div class="container" style="border: 1px solid var(--primary);">
+            <h3 style="margin-top:0;">✍️ අතින් පැමිණීම සටහන් කිරීම</h3>
+            <input type="text" id="manual-search-input" placeholder="ID අංකය හෝ නම ගහන්න..." onkeyup="searchStudentForManualAtt()">
+            <div id="manual-search-results" style="max-height: 150px; overflow-y: auto; margin-top: 5px;"></div>
+        </div>
+
+        <div class="container">
+            <h3 style="margin-top:0;">📋 පැමිණීම් ලැයිස්තුව</h3>
+            <div class="filter-grid">
+                <select id="filter-att-inst" onchange="renderTable()"></select>
+                <select id="filter-att-grade" onchange="renderTable()">
+                    <option value="සියල්ල">සියලුම පන්ති</option><option value="6 වසර">6 වසර</option><option value="7 වසර">7 වසර</option><option value="8 වසර">8 වසර</option>
+                    <option value="9 වසර">9 වසර</option><option value="10 වසර">10 වසර</option><option value="11 වසර">11 වසර</option>
+                </select>
+            </div>
+            <button class="btn btn-success" style="margin-bottom:10px;" onclick="exportToExcel()">📥 පැමිණීම් වාර්තාව (.CSV)</button>
+            <div class="table-responsive">
+                <table>
+                    <thead><tr><th style="width:45%">නම</th><th style="width:30%">වේලාව</th><th style="width:25%">WhatsApp</th></tr></thead>
+                    <tbody id="attendance-table"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="container">
+            <h3 style="margin-top:0;">📊 පැමිණීමේ වාර්තා</h3>
+            <div class="filter-grid">
+                <button class="btn" onclick="showDailyReport()">🗓️ අද දින වාර්තාව</button>
+                <button class="btn btn-secondary" onclick="showMonthlyReport()">📅 මේ මාසයේ වාර්තාව</button>
+            </div>
+            <div id="report-view-box" style="margin-top:10px; padding:10px; background:#334155; border-radius:6px; display:none;"></div>
         </div>
     </div>
 
-    <!-- 4. ළමයා එකතු කිරීම සහ QR සාදා ගැනීම -->
-    <div class="container">
-        <h3>➕ ළමයා එකතු කිරීම</h3>
-        <label>ආයතනය:</label>
-        <select id="std-inst"></select>
-        <label>පන්තිය:</label>
-        <select id="std-grade">
-            <option value="6 වසර">6 වසර</option><option value="7 වසර">7 වසර</option><option value="8 වසර">8 වසර</option>
-            <option value="9 වසර">9 වසර</option><option value="10 වසර">10 වසර</option><option value="11 වසර">11 වසර</option>
-        </select>
-        <input type="text" id="std-id" placeholder="ID අංකය">
-        <input type="text" id="std-name" placeholder="නම">
-        <input type="tel" id="std-phone" placeholder="දුරකථන අංකය (07xxxxxxxx - අනිවාර්ය නැත)">
-        <button class="btn" onclick="registerAndGenerateQR()">QR සාදන්න</button>
-        <button class="btn btn-secondary" onclick="resetStudentForm()">🔄 අලුත් ළමයෙක්</button>
-        
-        <div id="qrcode-container" style="text-align:center; display:none; margin-top:10px;">
-            <div id="qr-display-box">
-                <div id="qrcode"></div>
-                <div id="qr-student-name" style="margin-top: 10px; font-weight: bold; font-size: 16px; color: #000000;"></div>
-                <div id="qr-student-id" style="margin-top: 2px; font-size: 14px; color: #555555;"></div>
+    <!-- TAB 2: මුදල් ගෙවීම් -->
+    <div id="pane-pay" class="tab-pane">
+        <div class="container">
+            <h3 style="margin-top:0;">💰 මුදල් ගෙවීම් කළමනාකරණය</h3>
+            
+            <div class="filter-grid">
+                <div>
+                    <label>ආයතනය:</label>
+                    <select id="pay-filter-inst" onchange="renderPaymentList()"></select>
+                </div>
+                <div>
+                    <label>ශ්‍රේණිය:</label>
+                    <select id="pay-filter-grade" onchange="renderPaymentList()">
+                        <option value="6 වසර">6 වසර</option><option value="7 වසර">7 වසර</option><option value="8 වසර">8 වසර</option>
+                        <option value="9 වසර">9 වසර</option><option value="10 වසර">10 වසර</option><option value="11 වසර">11 වසර</option>
+                    </select>
+                </div>
             </div>
-            <br>
-            <canvas id="download-canvas" style="display:none;"></canvas>
-            <button id="download-qr-btn" class="btn btn-success" onclick="downloadQR()">📥 Download QR</button>
+
+            <div class="filter-grid">
+                <div>
+                    <label>අවුරුද්ද:</label>
+                    <select id="pay-filter-year" onchange="renderPaymentList()">
+                        <option value="2026">2026</option><option value="2027">2027</option><option value="2028">2028</option>
+                        <option value="2029">2029</option><option value="2030">2030</option>
+                    </select>
+                </div>
+                <div>
+                    <label>මාසය:</label>
+                    <select id="pay-filter-month" onchange="renderPaymentList()">
+                        <option value="ජනවාරි">ජනවාරි</option><option value="පෙබරවාරි">පෙබරවාරි</option><option value="මාර්තු">මාර්තු</option>
+                        <option value="අප්‍රේල්">අප්‍රේල්</option><option value="මැයි">මැයි</option><option value="ජූනි">ජූනි</option>
+                        <option value="ජූලි">ජූලි</option><option value="අගෝස්තු">අගෝස්තු</option><option value="සැප්තැම්බර්">සැප්තැම්බර්</option>
+                        <option value="ඔක්තෝබර්">ඔක්තෝබර්</option><option value="නොවැම්බර්">නොවැම්බර්</option><option value="දෙසැම්බර්">දෙසැම්බර්</option>
+                    </select>
+                </div>
+            </div>
+
+            <div style="background: #1e293b; border: 1px solid var(--primary); padding: 12px; border-radius: 8px; margin-top: 10px;">
+                <div style="font-size: 14px; font-weight: bold; color: var(--primary); margin-bottom: 8px;">📊 මාසික ආදායම් සාරාංශය</div>
+                <div class="dash-grid">
+                    <div class="dash-card"><h4>මුළු ළමුන්</h4><div id="dash-total-students" class="dash-num">0</div></div>
+                    <div class="dash-card"><h4>ගෙවූ / Free</h4><div id="dash-paid-count" class="dash-num" style="color: var(--accent);">0</div></div>
+                    <div class="dash-card"><h4>නොගෙවූ</h4><div id="dash-unpaid-count" class="dash-num" style="color: var(--danger);">0</div></div>
+                    <div class="dash-card"><h4>මුළු ආදායම</h4><div id="dash-total-revenue" class="dash-num" style="color: var(--warning);">Rs. 0</div></div>
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 8px; margin-top: 5px;">
+                    <label style="font-size: 12px; white-space: nowrap; margin:0;">පන්ති ගාස්තුව (රු.):</label>
+                    <input type="number" id="class-fee-input" value="800" placeholder="800" oninput="renderPaymentList()" style="padding: 6px; margin: 0; font-size: 13px;">
+                </div>
+            </div>
+
+            <button class="btn btn-secondary" style="margin-top:10px;" onclick="togglePaymentList()">📋 ගෙවීම් ලැයිස්තුව පෙන්වන්න / වසන්න</button>
+            <button class="btn btn-success" style="margin-top:6px;" onclick="exportPaymentsToExcel()">📥 මුදල් වාර්තාව (.CSV)</button>
+
+            <div id="payment-table-wrapper" style="display: block; margin-top: 10px;">
+                <input type="text" id="pay-search-input" placeholder="🔍 ළමයාගේ නම හෝ ID එක..." onkeyup="renderPaymentList()">
+                <div class="table-responsive">
+                    <table>
+                        <thead><tr><th style="width:45%">නම / විස්තරය</th><th style="width:25%">තත්ත්වය</th><th style="width:30%">ගෙවීම්</th></tr></thead>
+                        <tbody id="payment-list-table"></tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- 5. මුදල් ගෙවීම් කළමනාකරණය -->
-    <div class="container">
-        <h3>💰 මුදල් ගෙවීම් කළමනාකරණය</h3>
-        
-        <div class="filter-grid">
-            <div>
-                <label>ආයතනය:</label>
-                <select id="pay-filter-inst" onchange="renderPaymentList()"></select>
+    <!-- TAB 3: ළමුන් ලියාපදිංචිය & කළමනාකරණය -->
+    <div id="pane-std" class="tab-pane">
+        <div class="container">
+            <h3 style="margin-top:0;">➕ ළමයා එකතු කිරීම</h3>
+            <div class="filter-grid">
+                <div>
+                    <label>ආයතනය:</label>
+                    <select id="std-inst"></select>
+                </div>
+                <div>
+                    <label>පන්තිය:</label>
+                    <select id="std-grade">
+                        <option value="6 වසර">6 වසර</option><option value="7 වසර">7 වසර</option><option value="8 වසර">8 වසර</option>
+                        <option value="9 වසර">9 වසර</option><option value="10 වසර">10 වසර</option><option value="11 වසර">11 වසර</option>
+                    </select>
+                </div>
             </div>
-            <div>
-                <label>ශ්‍රේණිය:</label>
-                <select id="pay-filter-grade" onchange="renderPaymentList()">
+            <input type="text" id="std-id" placeholder="ID අංකය">
+            <input type="text" id="std-name" placeholder="නම">
+            <input type="tel" id="std-phone" placeholder="දුරකථන අංකය (07xxxxxxxx)">
+            
+            <label>කාඩ්පත් වර්ගය:</label>
+            <select id="std-card-type">
+                <option value="Normal">සාමාන්‍ය (Normal)</option>
+                <option value="Free">නොමිලේ (Free Card)</option>
+            </select>
+
+            <button class="btn" onclick="registerAndGenerateQR()">QR සාදන්න</button>
+            <button class="btn btn-secondary" onclick="resetStudentForm()">🔄 අලුත් ළමයෙක්</button>
+            
+            <div id="qrcode-container" style="text-align:center; display:none; margin-top:10px;">
+                <div id="qr-display-box">
+                    <div id="qrcode"></div>
+                    <div id="qr-student-name" style="margin-top: 10px; font-weight: bold; font-size: 16px; color: #000000;"></div>
+                    <div id="qr-student-id" style="margin-top: 2px; font-size: 14px; color: #555555;"></div>
+                </div>
+                <br>
+                <canvas id="download-canvas" style="display:none;"></canvas>
+                <button id="download-qr-btn" class="btn btn-success" onclick="downloadQR()">📥 Download QR</button>
+            </div>
+        </div>
+
+        <div class="container">
+            <h3 style="margin-top:0;">👨‍🎓 ළමුන් කළමනාකරණය</h3>
+            <div class="filter-grid">
+                <select id="filter-manage-inst" onchange="renderStudentList()"></select>
+                <select id="filter-manage-grade" onchange="renderStudentList()">
                     <option value="6 වසර">6 වසර</option><option value="7 වසර">7 වසර</option><option value="8 වසර">8 වසර</option>
                     <option value="9 වසර">9 වසර</option><option value="10 වසර">10 වසර</option><option value="11 වසර">11 වසර</option>
                 </select>
             </div>
-        </div>
-
-        <div class="filter-grid">
-            <div>
-                <label>අවුරුද්ද තෝරන්න:</label>
-                <select id="pay-filter-year" onchange="renderPaymentList()">
-                    <option value="2026">2026</option>
-                    <option value="2027">2027</option>
-                    <option value="2028">2028</option>
-                    <option value="2029">2029</option>
-                    <option value="2030">2030</option>
-                </select>
-            </div>
-            <div>
-                <label>මාසය තෝරන්න:</label>
-                <select id="pay-filter-month" onchange="renderPaymentList()">
-                    <option value="ජනවාරි">ජනවාරි</option>
-                    <option value="පෙබරවාරි">පෙබරවාරි</option>
-                    <option value="මාර්තු">මාර්තු</option>
-                    <option value="අප්‍රේල්">අප්‍රේල්</option>
-                    <option value="මැයි">මැයි</option>
-                    <option value="ජූනි">ජූනි</option>
-                    <option value="ජූලි">ජූලි</option>
-                    <option value="අගෝස්තු">අගෝස්තු</option>
-                    <option value="සැප්තැම්බර්">සැප්තැම්බර්</option>
-                    <option value="ඔක්තෝබර්">ඔක්තෝබර්</option>
-                    <option value="නොවැම්බර්">නොවැම්බර්</option>
-                    <option value="දෙසැම්බර්">දෙසැම්බර්</option>
-                </select>
-            </div>
-        </div>
-
-        <!-- 📊 මාසික ආදායම් සාරාංශය -->
-        <div style="background: #1e293b; border: 1px solid var(--primary); padding: 12px; border-radius: 8px; margin-top: 10px;">
-            <div style="font-size: 14px; font-weight: bold; color: var(--primary); margin-bottom: 8px;">📊 මාසික ආදායම් සාරාංශය</div>
+            <button class="btn btn-secondary" onclick="toggleStudentList()">📋 ළමුන් ලැයිස්තුව පෙන්වන්න / වසන්න</button>
             
-            <div class="dash-grid">
-                <div class="dash-card">
-                    <h4>මුළු ළමුන් ගණන</h4>
-                    <div id="dash-total-students" class="dash-num">0</div>
+            <div id="student-table-wrapper" style="display: none;">
+                <div class="table-responsive">
+                    <table>
+                        <thead><tr><th style="width:20%">ID</th><th style="width:55%">නම / කාඩ් වර්ගය</th><th style="width:25%">මකන්න</th></tr></thead>
+                        <tbody id="student-list-table"></tbody>
+                    </table>
                 </div>
-                <div class="dash-card">
-                    <h4>ගෙවූ ළමුන් සංඛ්‍යාව</h4>
-                    <div id="dash-paid-count" class="dash-num" style="color: var(--accent);">0</div>
-                </div>
-                <div class="dash-card">
-                    <h4>නොගෙවූ ළමුන් සංඛ්‍යාව</h4>
-                    <div id="dash-unpaid-count" class="dash-num" style="color: var(--danger);">0</div>
-                </div>
-                <div class="dash-card">
-                    <h4>මුළු ආදායම (රු.)</h4>
-                    <div id="dash-total-revenue" class="dash-num" style="color: var(--warning);">Rs. 0</div>
-                </div>
-            </div>
-
-            <div style="display: flex; align-items: center; gap: 8px; margin-top: 5px;">
-                <label style="font-size: 12px; white-space: nowrap; margin:0;">පන්ති ගාස්තුව (රු.):</label>
-                <input type="number" id="class-fee-input" value="1500" placeholder="1500" oninput="renderPaymentList()" style="padding: 6px; margin: 0; font-size: 13px;">
-            </div>
-        </div>
-
-        <button class="btn btn-secondary" style="margin-top:10px;" onclick="togglePaymentList()">📋 ගෙවීම් ලැයිස්තුව පෙන්වන්න / වසන්න</button>
-        <button class="btn btn-success" style="margin-top:6px;" onclick="exportPaymentsToExcel()">📥 මුදල් වාර්තාව බාගත කරන්න (.CSV)</button>
-
-        <div id="payment-table-wrapper" style="display: none; margin-top: 10px;">
-            <input type="text" id="pay-search-input" placeholder="🔍 නිශ්චිත ළමයෙක් සෙවීමට නම හෝ ID එක ගහන්න..." onkeyup="renderPaymentList()">
-            <div class="table-responsive">
-                <table>
-                    <thead><tr><th style="width:45%">නම / විස්තරය</th><th style="width:25%">තත්ත්වය</th><th style="width:30%">ගෙවීම්</th></tr></thead>
-                    <tbody id="payment-list-table"></tbody>
-                </table>
             </div>
         </div>
     </div>
 
-    <!-- 6. පන්ති උසස් කිරීම -->
-    <div class="container">
-        <h3>🎓 පන්ති උසස් කිරීම (Promotion)</h3>
-        <label>සිට:</label>
-        <select id="promote-from"><option value="6 වසර">6 වසර</option><option value="7 වසර">7 වසර</option><option value="8 වසර">8 වසර</option><option value="9 වසර">9 වසර</option><option value="10 වසර">10 වසර</option></select>
-        <label>දක්වා:</label>
-        <select id="promote-to"><option value="7 වසර">7 වසර</option><option value="8 වසර">8 වසර</option><option value="9 වසර">9 වසර</option><option value="10 වසර">10 වසර</option><option value="11 වසර">11 වසර</option></select>
-        <button class="btn btn-warning" onclick="promoteStudents()">🚀 උසස් කරන්න</button>
-    </div>
-
-    <!-- 7. පැමිණීම් ලැයිස්තුව -->
-    <div class="container">
-        <h3>📋 පැමිණීම් ලැයිස්තුව</h3>
-        <select id="filter-att-inst" onchange="renderTable()"></select>
-        <select id="filter-att-grade" onchange="renderTable()">
-            <option value="සියල්ල">සියලුම පන්ති</option><option value="6 වසර">6 වසර</option><option value="7 වසර">7 වසර</option><option value="8 වසර">8 වසර</option>
-            <option value="9 වසර">9 වසර</option><option value="10 වසර">10 වසර</option><option value="11 වසර">11 වසර</option>
-        </select>
-        <button class="btn btn-success" style="margin-bottom:10px;" onclick="exportToExcel()">📥 පැමිණීම් වාර්තාව බාගත කරන්න (.CSV)</button>
-        <div class="table-responsive">
-            <table>
-                <thead><tr><th style="width:45%">නම</th><th style="width:30%">වේලාව</th><th style="width:25%">WhatsApp</th></tr></thead>
-                <tbody id="attendance-table"></tbody>
-            </table>
-        </div>
-    </div>
-
-    <!-- 8. දිනපතා / මාසික වාර්තා -->
-    <div class="container">
-        <h3>📊 පැමිණීමේ වාර්තා</h3>
-        <button class="btn" onclick="showDailyReport()">🗓️ අද දින වාර්තාව</button>
-        <button class="btn btn-secondary" onclick="showMonthlyReport()">📅 මේ මාසයේ වාර්තාව</button>
-        <div id="report-view-box" style="margin-top:10px; padding:10px; background:#334155; border-radius:6px; display:none;"></div>
-    </div>
-
-    <!-- 9. ළමුන් කළමනාකරණය -->
-    <div class="container">
-        <h3>👨‍🎓 ළමුන් කළමනාකරණය</h3>
-        <select id="filter-manage-inst" onchange="renderStudentList()"></select>
-        <select id="filter-manage-grade" onchange="renderStudentList()">
-            <option value="6 වසර">6 වසර</option><option value="7 වසර">7 වසර</option><option value="8 වසර">8 වසර</option><option value="9 වසර">9 වසර</option><option value="10 වසර">10 වසර</option><option value="11 වසර">11 වසර</option>
-        </select>
-        <button class="btn btn-secondary" onclick="toggleStudentList()">📋 ළමුන් ලැයිස්තුව පෙන්වන්න / වසන්න</button>
-        
-        <div id="student-table-wrapper" style="display: none;">
-            <div class="table-responsive">
-                <table>
-                    <thead><tr><th style="width:20%">ID</th><th style="width:50%">නම</th><th style="width:30%">මකන්න</th></tr></thead>
-                    <tbody id="student-list-table"></tbody>
-                </table>
+    <!-- TAB 4: සැකසුම් -->
+    <div id="pane-set" class="tab-pane">
+        <div class="container">
+            <h3 style="margin-top:0;">🏢 ආයතන කළමනාකරණය</h3>
+            <input type="text" id="new-inst-name" placeholder="අලුත් ආයතනයේ නම">
+            <button class="btn btn-success" onclick="addInstitute()">➕ ආයතනය එකතු කරන්න</button>
+            <div style="margin-top: 15px;">
+                <select id="delete-inst-select"></select>
+                <button class="btn btn-danger" onclick="deleteInstitute()">🗑️ තෝරාගත් ආයතනය මකන්න</button>
             </div>
+        </div>
+
+        <div class="container">
+            <h3 style="margin-top:0;">🎓 පන්ති උසස් කිරීම (Promotion)</h3>
+            <label>සිට:</label>
+            <select id="promote-from"><option value="6 වසර">6 වසර</option><option value="7 වසර">7 වසර</option><option value="8 වසර">8 වසර</option><option value="9 වසර">9 වසර</option><option value="10 වසර">10 වසර</option></select>
+            <label>දක්වා:</label>
+            <select id="promote-to"><option value="7 වසර">7 වසර</option><option value="8 වසර">8 වසර</option><option value="9 වසර">9 වසර</option><option value="10 වසර">10 වසර</option><option value="11 වසර">11 වසර</option></select>
+            <button class="btn btn-warning" onclick="promoteStudents()">🚀 උසස් කරන්න</button>
         </div>
     </div>
 
     <script>
         const API_URL = "https://script.google.com/macros/s/AKfycbxGJHehaLD5Y4xkwMvkkSDw_1Oh8SbJpBLv7CtYenGcqpP55n3yTIP2Z-PQ9Ci9W1FfDw/exec";
 
-        let institutes = ["විමන්සා", "නැණස"];
+        let institutes = ["විමංසා", "නැණස"];
         let students = {};
         let attendance = [];
-        let showPaymentListFlag = false;
+        let showPaymentListFlag = true;
         let showStudentListFlag = false;
 
         const monthNamesSinhala = ["ජනවාරි", "පෙබරවාරි", "මාර්තු", "අප්‍රේල්", "මැයි", "ජූනි", "ජූලි", "අගෝස්තු", "සැප්තැම්බර්", "ඔක්තෝබර්", "නොවැම්බර්", "දෙසැම්බර්"];
         let currentYearVal = new Date().getFullYear().toString();
         let currentMonthVal = monthNamesSinhala[new Date().getMonth()];
+
+        window.openTab = function(paneId, btnEl) {
+            document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(paneId).classList.add('active');
+            btnEl.classList.add('active');
+            if(paneId === 'pane-pay') renderPaymentList();
+            if(paneId === 'pane-std') renderStudentList();
+        }
 
         async function apiCall(payload) {
             try {
@@ -284,9 +297,7 @@
             try {
                 let response = await fetch(API_URL + "?sheet=" + sheetName);
                 let result = await response.json();
-                if(result.status === "success") {
-                    return result.data;
-                }
+                if(result.status === "success") return result.data;
             } catch(e) {
                 console.error("Fetch Error for " + sheetName, e);
             }
@@ -327,7 +338,8 @@
                             phone: s.phone || '',
                             grade: s.grade || '',
                             inst: s.inst || '',
-                            payments: paymentsObj
+                            payments: paymentsObj,
+                            cardType: s.cardType || 'Normal'
                         };
                     }
                 });
@@ -343,19 +355,16 @@
                     name: a.name || '',
                     phone: a.phone || '',
                     time: a.time || '',
-                    date: a.date || '',
+                    date: a.date || a.attendance || '',
                     grade: a.grade || '',
                     inst: a.inst || ''
                 }));
             }
             renderTable();
-
             document.getElementById('loading-overlay').style.display = 'none';
         }
 
-        window.onload = function() {
-            loadAllData();
-        }
+        window.onload = function() { loadAllData(); }
 
         window.populateInstitutes = function() {
             let options = institutes.map(i => `<option value="${i}">${i}</option>`).join('');
@@ -372,11 +381,9 @@
             let name = document.getElementById('new-inst-name').value.trim();
             if(!name) { alert("ආයතනයේ නම ඇතුළත් කරන්න."); return; }
             if(institutes.includes(name)) { alert("මෙම ආයතනය දැනටමත් ඇත."); return; }
-            
             institutes.push(name);
             populateInstitutes();
             document.getElementById('new-inst-name').value = '';
-            
             await apiCall({ sheet: 'institutes', action: 'add', row: [name] });
             alert("ආයතනය එකතු කරන ලදී!");
             loadAllData();
@@ -399,27 +406,24 @@
             let phone = document.getElementById('std-phone').value.trim();
             let grade = document.getElementById('std-grade').value;
             let inst = document.getElementById('std-inst').value;
+            let cardType = document.getElementById('std-card-type').value;
             
             if(!id || !name) { alert("කරුණාකර ID එක සහ නම ඇතුළත් කරන්න."); return; }
             
-            students[id] = { name, phone, grade, inst, payments: {} };
+            students[id] = { name, phone, grade, inst, payments: {}, cardType };
             
             let qrContainer = document.getElementById("qrcode");
             qrContainer.innerHTML = "";
             new QRCode(qrContainer, {
-                text: id,
-                width: 180,
-                height: 180,
-                colorDark: "#000000",
-                colorLight: "#ffffff",
-                correctLevel: QRCode.CorrectLevel.H
+                text: id, width: 180, height: 180,
+                colorDark: "#000000", colorLight: "#ffffff", correctLevel: QRCode.CorrectLevel.H
             });
             
             document.getElementById('qr-student-name').innerText = name;
             document.getElementById('qr-student-id').innerText = "ID: " + id;
             document.getElementById('qrcode-container').style.display = 'block';
 
-            await apiCall({ sheet: 'students', action: 'add', row: [id, name, phone, grade, inst, JSON.stringify({})] });
+            await apiCall({ sheet: 'students', action: 'add', row: [id, name, phone, grade, inst, JSON.stringify({}), cardType] });
             renderStudentList();
             renderPaymentList();
             alert("ළමයා සාර්ථකව ලියාපදිංචි කර QR කේතය සාදන ලදී!");
@@ -432,7 +436,9 @@
             let time = new Date().toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
             
             let alreadyMarked = attendance.some(a => a.id === studentId && a.date === date);
-            
+            let statusBox = document.getElementById('status-box');
+            statusBox.style.display = 'block';
+
             if(!alreadyMarked) {
                 let attRecord = { id: studentId, name: std.name, phone: std.phone, time, date, grade: std.grade, inst: std.inst };
                 attendance.push(attRecord);
@@ -440,19 +446,13 @@
 
                 await apiCall({ sheet: 'attendance', action: 'add', row: [studentId, std.name, std.grade, std.inst, date, time] });
                 
-                // WhatsApp මැසේජ් එක යැවීම සඳහා ස්වයංක්‍රීයව ලින්ක් එක විවෘත වීම
                 if(std.phone) {
                     let formattedPhone = std.phone.startsWith('0') ? '94' + std.phone.slice(1) : std.phone;
                     let msg = encodeURIComponent(`පන්ති පැමිණීම් දැනුම්දීමයි: ඔබගේ දරුවා වන ${std.name} අද දින (${date}) ${time} ට පන්තියට පැමිණියේය. - හිතන අයගේ ගණන් පන්තිය`);
                     window.open(`https://wa.me/${formattedPhone}?text=${msg}`, '_blank');
                 }
-                
-                let statusBox = document.getElementById('status-box');
-                statusBox.style.display = 'block';
                 statusBox.innerHTML = `✅ <b style="color:var(--accent);">${std.name}</b> පැමිණියා! (${time})`;
             } else {
-                let statusBox = document.getElementById('status-box');
-                statusBox.style.display = 'block';
                 statusBox.innerHTML = `⚠️ <b style="color:var(--warning);">${std.name}</b> දැනටමත් පැමිණීම සටහන් කර ඇත!`;
             }
         }
@@ -492,12 +492,26 @@
         window.togglePaymentList = function() {
             showPaymentListFlag = !showPaymentListFlag;
             let wrapper = document.getElementById('payment-table-wrapper');
-            if(wrapper) {
-                wrapper.style.display = showPaymentListFlag ? 'block' : 'none';
+            if(wrapper) wrapper.style.display = showPaymentListFlag ? 'block' : 'none';
+            if(showPaymentListFlag) renderPaymentList();
+        }
+
+        // Helper to calculate unpaid months arrears up to selected month
+        function getStudentArrears(student, selYear, selMonth, defaultFee) {
+            if (student.cardType === 'Free') return { count: 0, amount: 0 };
+            
+            let mIndex = monthNamesSinhala.indexOf(selMonth);
+            let unpaidCount = 0;
+
+            // පරීක්ෂා කරන්නේ වසරේ ජනවාරි සිට තෝරාගත් මාසය දක්වා කාලයයි
+            for (let i = 0; i <= mIndex; i++) {
+                let mName = monthNamesSinhala[i];
+                let key = `${selYear}_${mName}`;
+                if (!student.payments || !student.payments[key]) {
+                    unpaidCount++;
+                }
             }
-            if(showPaymentListFlag) {
-                renderPaymentList();
-            }
+            return { count: unpaidCount, amount: unpaidCount * defaultFee };
         }
 
         window.renderPaymentList = function() {
@@ -513,33 +527,50 @@
             let selectedGrade = gradeEl.value;
             let selectedYear = yearEl.value;
             let selectedMonth = monthEl.value;
-            let classFee = parseFloat(feeEl ? feeEl.value : 0) || 0;
+            let defaultClassFee = parseFloat(feeEl ? feeEl.value : 800) || 800;
             let targetKey = `${selectedYear}_${selectedMonth}`;
 
-            let sortedIds = Object.keys(students).sort((a, b) => {
-                return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
-            });
+            let sortedIds = Object.keys(students).sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
 
             let totalStudentsCount = 0;
             let paidCount = 0;
             let unpaidCount = 0;
+            let totalRevenue = 0;
+
+            // ගෙවපු නැති ළමයි ලැයිස්තුවේ උඩට ගෙන ඒම සඳහා සෝට් කිරීම (Unpaid first)
+            sortedIds.sort((idA, idB) => {
+                let sA = students[idA];
+                let sB = students[idB];
+                let paidA = (sA.cardType === 'Free') || !!(sA.payments && sA.payments[targetKey]);
+                let paidB = (sB.cardType === 'Free') || !!(sB.payments && sB.payments[targetKey]);
+                
+                if (paidA === paidB) return idA.localeCompare(idB, undefined, { numeric: true });
+                return paidA ? 1 : -1; // paid අය පහළට, unpaid අය උඩට
+            });
 
             sortedIds.forEach(id => {
                 let s = students[id];
                 if(s.inst === selectedInst && s.grade === selectedGrade) {
-                    totalStudentsCount++;
-                    if(s.payments && s.payments[targetKey]) {
+                    let isFree = (s.cardType === 'Free');
+                    let payVal = s.payments ? s.payments[targetKey] : undefined;
+
+                    if(isFree) {
                         paidCount++;
+                    } else if(payVal) {
+                        paidCount++;
+                        let amount = (typeof payVal === 'number') ? payVal : defaultClassFee;
+                        totalRevenue += amount;
                     } else {
                         unpaidCount++;
                     }
+                    totalStudentsCount++;
                 }
             });
 
             document.getElementById('dash-total-students').innerText = totalStudentsCount;
             document.getElementById('dash-paid-count').innerText = paidCount;
             document.getElementById('dash-unpaid-count').innerText = unpaidCount;
-            document.getElementById('dash-total-revenue').innerText = "Rs. " + (paidCount * classFee).toLocaleString();
+            document.getElementById('dash-total-revenue').innerText = "Rs. " + totalRevenue.toLocaleString();
 
             let wrapper = document.getElementById('payment-table-wrapper');
             if(!wrapper || wrapper.style.display === 'none') return;
@@ -553,22 +584,38 @@
                 let s = students[id];
                 if(s.inst === selectedInst && s.grade === selectedGrade) {
                     let matchesQuery = !query || id.toLowerCase().includes(query) || s.name.toLowerCase().includes(query);
-                    
                     if(matchesQuery) {
                         count++;
-                        let isPaidThisMonth = !!(s.payments && s.payments[targetKey]);
-                        let statusText = isPaidThisMonth ? "ගෙවා ඇත" : "ගෙවා නැත";
-                        let statusColor = isPaidThisMonth ? "var(--accent)" : "var(--danger)";
-                        let btnText = isPaidThisMonth ? '❌ අවලංගු කරන්න' : '✅ ගෙව්වා ලෙස මාක් කරන්න';
-                        let btnClass = isPaidThisMonth ? 'btn btn-danger' : 'btn btn-success';
-                        
-                        tbody.innerHTML += `
-                            <tr>
-                                <td style="text-align:left; padding-left:8px;"><b>${s.name}</b><br><small style="color:#94a3b8;">ID: ${id}</small></td>
-                                <td><span style="color:${statusColor}; font-weight:bold;">${statusText}</span></td>
-                                <td><button class="${btnClass}" style="padding:6px 10px; font-size:11px; width:auto;" onclick="togglePayment('${id}')">${btnText}</button></td>
-                            </tr>
-                        `;
+                        let isFree = (s.cardType === 'Free');
+                        let payVal = s.payments ? s.payments[targetKey] : undefined;
+                        let isPaidThisMonth = !!payVal;
+
+                        if(isFree) {
+                            tbody.innerHTML += `
+                                <tr>
+                                    <td style="text-align:left; padding-left:8px;"><b>${s.name}</b><br><small style="color:#94a3b8;">ID: ${id}</small></td>
+                                    <td><span class="badge-free">Free Card</span></td>
+                                    <td><small style="color:#94a3b8;">නොමිලේ</small></td>
+                                </tr>
+                            `;
+                        } else {
+                            let arrears = getStudentArrears(s, selectedYear, selectedMonth, defaultClassFee);
+                            let arrearsBadge = (!isPaidThisMonth && arrears.count > 0) ? `<br><span class="badge-arrears">අරියස්: මාස ${arrears.count} (Rs. ${arrears.amount})</span>` : '';
+                            
+                            let paidAmtBadge = (typeof payVal === 'number') ? `<br><span style="color:#38bdf8; font-size:11px;">Rs. ${payVal}</span>` : '';
+                            let statusText = isPaidThisMonth ? `ගෙවා ඇත ${paidAmtBadge}` : `ගෙවා නැත ${arrearsBadge}`;
+                            let statusColor = isPaidThisMonth ? "var(--accent)" : "var(--danger)";
+                            let btnText = isPaidThisMonth ? '❌ අවලංගු' : '✅ ගෙව්වා මාක්';
+                            let btnClass = isPaidThisMonth ? 'btn btn-danger' : 'btn btn-success';
+                            
+                            tbody.innerHTML += `
+                                <tr>
+                                    <td style="text-align:left; padding-left:8px;"><b>${s.name}</b><br><small style="color:#94a3b8;">ID: ${id}</small></td>
+                                    <td><span style="color:${statusColor}; font-weight:bold;">${statusText}</span></td>
+                                    <td><button class="${btnClass}" style="padding:5px 6px; font-size:11px; width:auto;" onclick="togglePayment('${id}')">${btnText}</button></td>
+                                </tr>
+                            `;
+                        }
                     }
                 }
             });
@@ -581,6 +628,8 @@
         window.togglePayment = async function(id) {
             let yearEl = document.getElementById('pay-filter-year');
             let monthEl = document.getElementById('pay-filter-month');
+            let feeEl = document.getElementById('class-fee-input');
+            let currentFee = parseFloat(feeEl ? feeEl.value : 800) || 800;
             let targetKey = `${yearEl.value}_${monthEl.value}`;
 
             if(!students[id].payments) students[id].payments = {};
@@ -588,53 +637,43 @@
             if(students[id].payments[targetKey]) {
                 delete students[id].payments[targetKey];
             } else {
-                students[id].payments[targetKey] = true;
+                students[id].payments[targetKey] = currentFee;
             }
 
             renderPaymentList();
             
             let jsonStringPayments = JSON.stringify(students[id].payments);
-            await apiCall({ sheet: 'students', action: 'update', id: id, row: [id, students[id].name, students[id].phone, students[id].grade, students[id].inst, jsonStringPayments] });
+            await apiCall({ sheet: 'students', action: 'update', id: id, row: [id, students[id].name, students[id].phone, students[id].grade, students[id].inst, jsonStringPayments, students[id].cardType || 'Normal'] });
         }
 
         window.exportPaymentsToExcel = function() {
-            let instEl = document.getElementById('pay-filter-inst');
-            let gradeEl = document.getElementById('pay-filter-grade');
-            let yearEl = document.getElementById('pay-filter-year');
-            let monthEl = document.getElementById('pay-filter-month');
-            
-            let selectedInst = instEl.value;
-            let selectedGrade = gradeEl.value;
-            let selectedYear = yearEl.value;
-            let selectedMonth = monthEl.value;
+            let selectedInst = document.getElementById('pay-filter-inst').value;
+            let selectedGrade = document.getElementById('pay-filter-grade').value;
+            let selectedYear = document.getElementById('pay-filter-year').value;
+            let selectedMonth = document.getElementById('pay-filter-month').value;
+            let defaultFee = parseFloat(document.getElementById('class-fee-input').value) || 800;
             let targetKey = `${selectedYear}_${selectedMonth}`;
 
-            let sortedIds = Object.keys(students).sort((a, b) => {
-                return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
-            });
+            let sortedIds = Object.keys(students).sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
 
             let filteredList = [];
             sortedIds.forEach(id => {
                 let s = students[id];
                 if(s.inst === selectedInst && s.grade === selectedGrade) {
-                    let isPaidThisMonth = !!(s.payments && s.payments[targetKey]);
+                    let isFree = (s.cardType === 'Free');
+                    let payVal = s.payments ? s.payments[targetKey] : undefined;
+                    let arrears = getStudentArrears(s, selectedYear, selectedMonth, defaultFee);
+                    
+                    let statusStr = isFree ? "Free Card" : (payVal ? "ගෙවා ඇත" : `ගෙවා නැත (අරියස් මාස: ${arrears.count}, මුළු Rs.${arrears.amount})`);
                     filteredList.push({
-                        id: id,
-                        name: s.name,
-                        phone: s.phone,
-                        grade: s.grade,
-                        inst: s.inst,
-                        status: isPaidThisMonth ? "ගෙවා ඇත" : "ගෙවා නැත"
+                        id: id, name: s.name, phone: s.phone, grade: s.grade, inst: s.inst, status: statusStr
                     });
                 }
             });
 
-            if(filteredList.length === 0) { 
-                alert("බාගත කිරීමට ළමුන්ගේ දත්ත නොමැත."); 
-                return; 
-            }
+            if(filteredList.length === 0) { alert("බාගත කිරීමට ළමුන්ගේ දත්ත නොමැත."); return; }
 
-            let csv = `ID,නම,දුරකථන අංකය,පන්තිය,ආයතනය,මාසය (${selectedMonth} ${selectedYear}),තත්ත්වය\n`;
+            let csv = `ID,නම,දුරකථන අංකය,පන්තිය,ආයතනය,මාසය (${selectedMonth} ${selectedYear}),තත්ත්වය හා අරියස්\n`;
             filteredList.forEach(item => {
                 csv += `"${item.id}","${item.name}","${item.phone}","${item.grade}","${item.inst}","${selectedMonth} ${selectedYear}","${item.status}"\n`;
             });
@@ -664,7 +703,6 @@
                 } else {
                     waBtn = `<small style="color:#94a3b8;">අංකයක් නැත</small>`;
                 }
-
                 tbody.innerHTML += `<tr><td>${row.name}</td><td>${row.time}</td><td>${waBtn}</td></tr>`;
             });
         }
@@ -705,12 +743,8 @@
         window.toggleStudentList = function() {
             showStudentListFlag = !showStudentListFlag;
             let wrapper = document.getElementById('student-table-wrapper');
-            if(wrapper) {
-                wrapper.style.display = showStudentListFlag ? 'block' : 'none';
-            }
-            if(showStudentListFlag) {
-                renderStudentList();
-            }
+            if(wrapper) wrapper.style.display = showStudentListFlag ? 'block' : 'none';
+            if(showStudentListFlag) renderStudentList();
         }
 
         window.renderStudentList = function() {
@@ -727,7 +761,8 @@
 
             Object.keys(students).forEach(id => {
                 if(students[id].inst === inst && students[id].grade === grade) {
-                    tbody.innerHTML += `<tr><td>${id}</td><td>${students[id].name}</td><td><button class="btn btn-danger" style="padding: 2px 8px;" onclick="deleteStudent('${id}')">🗑️</button></td></tr>`;
+                    let badge = students[id].cardType === 'Free' ? ' <span class="badge-free">Free</span>' : '';
+                    tbody.innerHTML += `<tr><td>${id}</td><td>${students[id].name}${badge}</td><td><button class="btn btn-danger" style="padding: 2px 8px;" onclick="deleteStudent('${id}')">🗑️</button></td></tr>`;
                 }
             });
         }
@@ -750,7 +785,7 @@
                     if(students[id].grade === f) {
                         students[id].grade = t;
                         let jsonStringPayments = JSON.stringify(students[id].payments || {});
-                        await apiCall({ sheet: 'students', action: 'update', id: id, row: [id, students[id].name, students[id].phone, students[id].grade, students[id].inst, jsonStringPayments] });
+                        await apiCall({ sheet: 'students', action: 'update', id: id, row: [id, students[id].name, students[id].phone, students[id].grade, students[id].inst, jsonStringPayments, students[id].cardType || 'Normal'] });
                     }
                 }
                 renderStudentList();
@@ -763,6 +798,7 @@
             document.getElementById('std-id').value = '';
             document.getElementById('std-name').value = '';
             document.getElementById('std-phone').value = '';
+            document.getElementById('std-card-type').value = 'Normal';
             document.getElementById('qrcode-container').style.display = 'none';
         }
 
