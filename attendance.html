@@ -105,7 +105,7 @@
     <!-- TAB 2: මුදල් ගෙවීම් -->
     <div id="pane-pay" class="tab-pane">
         <div class="container">
-            <h3 style="margin-top:0;">💰 මුදල් ගෙවීම් කළමනාකරණය</h3>
+            <h3 style="margin-top:0;">💰 මුදල් ගෙවීම් සහ අරියස් පරීක්ෂාව</h3>
             
             <div class="filter-grid">
                 <div>
@@ -121,26 +121,37 @@
                 </div>
             </div>
 
-            <div class="filter-grid">
-                <div>
-                    <label>අවුරුද්ද:</label>
-                    <select id="pay-filter-year" onchange="renderPaymentList()">
-                        <option value="2026">2026</option><option value="2027">2027</option><option value="2028">2028</option>
-                        <option value="2029">2029</option><option value="2030">2030</option>
+            <!-- ආරම්භක කාල පරාසය (Start Period) -->
+            <div style="background: #111827; padding: 10px; border-radius: 8px; margin-bottom: 8px; border: 1px solid #334155;">
+                <label style="color: var(--accent); font-weight: bold; font-size: 13px;">🟢 ආරම්භක මාසය (From):</label>
+                <div class="filter-grid" style="margin-top: 5px;">
+                    <select id="start-year" onchange="renderPaymentList()">
+                        <option value="2024">2024</option><option value="2025">2025</option><option value="2026" selected>2026</option><option value="2027">2027</option><option value="2028">2028</option>
+<option value="2029">2029</option>
+<option value="2030">2030</option>
+
+                    </select>
+                    <select id="start-month" onchange="renderPaymentList()">
+                        <option value="ජනවාරි" selected>ජනවාරි</option><option value="පෙබරවාරි">පෙබරවාරි</option><option value="මාර්තු">මාර්තු</option><option value="අප්‍රේල්">අප්‍රේල්</option><option value="මැයි">මැයි</option><option value="ජූනි">ජූනි</option><option value="ජූලි">ජූලි</option><option value="අගෝස්තු">අගෝස්තු</option><option value="සැප්තැම්බර්">සැප්තැම්බර්</option><option value="ඔක්තෝබර්">ඔක්තෝබර්</option><option value="නොවැම්බර්">නොවැම්බර්</option><option value="දෙසැම්බර්">දෙසැම්බර්</option>
                     </select>
                 </div>
-                <div>
-                    <label>මාසය:</label>
+            </div>
+
+            <!-- අවසන් කාල පරාසය (End Period / Target Month) -->
+            <div style="background: #111827; padding: 10px; border-radius: 8px; margin-bottom: 8px; border: 1px solid #334155;">
+                <label style="color: var(--warning); font-weight: bold; font-size: 13px;">🎯 අවසන් මාසය / පරීක්ෂා කරන මාසය (To):</label>
+                <div class="filter-grid" style="margin-top: 5px;">
+                    <select id="pay-filter-year" onchange="renderPaymentList()">
+                        <option value="2024">2024</option><option value="2025">2025</option><option value="2026" selected>2026</option><option value="2027">2027</option>
+                    </select>
                     <select id="pay-filter-month" onchange="renderPaymentList()">
-                        <option value="ජනවාරි">ජනවාරි</option><option value="පෙබරවාරි">පෙබරවාරි</option><option value="මාර්තු">මාර්තු</option>
-                        <option value="අප්‍රේල්">අප්‍රේල්</option><option value="මැයි">මැයි</option><option value="ජූනි">ජූනි</option>
-                        <option value="ජූලි">ජූලි</option><option value="අගෝස්තු">අගෝස්තු</option><option value="සැප්තැම්බර්">සැප්තැම්බර්</option><option value="ඔක්තෝබර්">ඔක්තෝබර්</option><option value="නොවැම්බර්">නොවැම්බර්</option><option value="දෙසැම්බර්">දෙසැම්බර්</option>
+                        <option value="ජනවාරි">ජනවාරි</option><option value="පෙබරවාරි">පෙබරවාරි</option><option value="මාර්තු">මාර්තු</option><option value="අප්‍රේල්">අප්‍රේල්</option><option value="මැයි">මැයි</option><option value="ජූනි">ජූනි</option><option value="ජූලි" selected>ජූලි</option><option value="අගෝස්තු">අගෝස්තු</option><option value="සැප්තැම්බර්">සැප්තැම්බර්</option><option value="ඔක්තෝබර්">ඔක්තෝබර්</option><option value="නොවැම්බර්">නොවැම්බර්</option><option value="දෙසැම්බර්">දෙසැම්බර්</option>
                     </select>
                 </div>
             </div>
 
             <div style="background: #1e293b; border: 1px solid var(--primary); padding: 12px; border-radius: 8px; margin-top: 10px;">
-                <div style="font-size: 14px; font-weight: bold; color: var(--primary); margin-bottom: 8px;">📊 මාසික ආදායම් සාරාංශය</div>
+                <div style="font-size: 14px; font-weight: bold; color: var(--primary); margin-bottom: 8px;">📊 තෝරාගත් කාල සීමාවේ ආදායම් සාරාංශය</div>
                 <div class="dash-grid">
                     <div class="dash-card"><h4>මුළු ළමුන්</h4><div id="dash-total-students" class="dash-num">0</div></div>
                     <div class="dash-card"><h4>ගෙවූ / Free</h4><div id="dash-paid-count" class="dash-num" style="color: var(--accent);">0</div></div>
@@ -521,21 +532,22 @@
             if(showPaymentListFlag) renderPaymentList();
         }
 
-        // තෝරාගත් වසර සහ මාසය දක්වා අරියස් ගණනය කිරීමේ නිවැරදි ක්‍රමවේදය
-        function getStudentArrears(student, selYear, selMonth, defaultFee) {
+        // නිශ්චිත ආරම්භක මාසයේ (From) සිට අවසන් මාසය (To) දක්වා කාල පරාසය තුළ අරියස් ගණනය කිරීම
+        function getStudentArrears(student, startY, startM, endY, endM, defaultFee) {
             if (student.cardType === 'Free') return { count: 0, amount: 0 };
             
-            let targetYear = parseInt(selYear);
-            let targetMonthIndex = monthNamesSinhala.indexOf(selMonth);
+            let sY = parseInt(startY);
+            let sMIdx = monthNamesSinhala.indexOf(startM);
+            let eY = parseInt(endY);
+            let eMIdx = monthNamesSinhala.indexOf(endM);
+
             let unpaidCount = 0;
 
-            // පරණ වසරවල සිට තෝරාගත් වසරේ අදාළ මාසය දක්වා ලූප් කරමින් පරීක්ෂා කරයි
-            let startYear = 2026; // පද්ධතිය පටන්ගත් හෝ ආරම්භක වසර ලෙස මෙහි දැක්විය හැක
-            
-            // ළමයාගේ ලියාපදිංචි වසර හෝ සිස්ටම් ආරම්භක වසරක සිට වත්මන් තේරීම දක්වා බලමු
-            for (let y = 2026; y <= targetYear; y++) {
-                let maxMonth = (y === targetYear) ? targetMonthIndex : 11;
-                for (let m = 0; m <= maxMonth; m++) {
+            for (let y = sY; y <= eY; y++) {
+                let mStart = (y === sY) ? sMIdx : 0;
+                let mEnd = (y === eY) ? eMIdx : 11;
+
+                for (let m = mStart; m <= mEnd; m++) {
                     let mName = monthNamesSinhala[m];
                     let key = `${y}_${mName}`;
                     if (!student.payments || !student.payments[key]) {
@@ -549,18 +561,25 @@
         window.renderPaymentList = function() {
             let instEl = document.getElementById('pay-filter-inst');
             let gradeEl = document.getElementById('pay-filter-grade');
-            let yearEl = document.getElementById('pay-filter-year');
-            let monthEl = document.getElementById('pay-filter-month');
+            
+            let startYEl = document.getElementById('start-year');
+            let startMEl = document.getElementById('start-month');
+            let endYEl = document.getElementById('pay-filter-year');
+            let endMEl = document.getElementById('pay-filter-month');
             let feeEl = document.getElementById('class-fee-input');
             
-            if(!instEl || !gradeEl || !yearEl || !monthEl) return;
+            if(!instEl || !gradeEl || !startYEl || !startMEl || !endYEl || !endMEl) return;
             
             let selectedInst = instEl.value;
             let selectedGrade = gradeEl.value;
-            let selectedYear = yearEl.value;
-            let selectedMonth = monthEl.value;
+            
+            let startY = startYEl.value;
+            let startM = startMEl.value;
+            let endY = endYEl.value;
+            let endM = endMEl.value;
+            
             let defaultClassFee = parseFloat(feeEl ? feeEl.value : 800) || 800;
-            let targetKey = `${selectedYear}_${selectedMonth}`;
+            let targetKey = `${endY}_${endM}`; // මේ මොහොතේ ටොගල් කිරීමට හෝ බැලීමට ගෙන ඇති නිශ්චිත මාසය
 
             let sortedIds = Object.keys(students).sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
 
@@ -629,17 +648,17 @@
                                 </tr>
                             `;
                         } else {
-                            let arrears = getStudentArrears(s, selectedYear, selectedMonth, defaultClassFee);
-                            let arrearsBadge = (!isPaidThisMonth && arrears.count > 0) ? `<br><span class="badge-arrears">අරියස්: මාස ${arrears.count} (Rs. ${arrears.amount})</span>` : '';
-                            let paidAmtBadge = (typeof payVal === 'number') ? `<br><span style="color:#38bdf8; font-size:11px;">Rs. ${payVal}</span>` : '';
-                            let statusText = isPaidThisMonth ? `ගෙවා ඇත ${paidAmtBadge}` : `ගෙවා නැත ${arrearsBadge}`;
+                            let arrears = getStudentArrears(s, startY, startM, endY, endM, defaultClassFee);
+                            let arrearsBadge = (arrears.count > 0) ? `<br><span class="badge-arrears">අරියස්: මාස ${arrears.count} (Rs. ${arrears.amount})</span>` : '<br><span style="color:var(--accent); font-size:11px;">සියල්ල ගෙවා ඇත</span>';
+                            let paidAmtBadge = (typeof payVal === 'number') ? `<br><span style="color:#38bdf8; font-size:11px;">Rs. ${payVal} (මේ මාසය)</span>` : '';
+                            let statusText = isPaidThisMonth ? `මේ මාසය ගෙවා ඇත ${paidAmtBadge}` : `මේ මාසය ගෙවා නැත`;
                             let statusColor = isPaidThisMonth ? "var(--accent)" : "var(--danger)";
                             let btnText = isPaidThisMonth ? '❌ අවලංගු' : '✅ ගෙව්වා මාක්';
                             let btnClass = isPaidThisMonth ? 'btn btn-danger' : 'btn btn-success';
                             
                             tbody.innerHTML += `
                                 <tr>
-                                    <td style="text-align:left; padding-left:8px;"><b>${s.name}</b><br><small style="color:#94a3b8;">ID: ${id}</small></td>
+                                    <td style="text-align:left; padding-left:8px;"><b>${s.name}</b><br><small style="color:#94a3b8;">ID: ${id}</small>${arrearsBadge}</td>
                                     <td><span style="color:${statusColor}; font-weight:bold;">${statusText}</span></td>
                                     <td><button class="${btnClass}" style="padding:5px 6px; font-size:11px; width:auto;" onclick="togglePayment('${id}')">${btnText}</button></td>
                                 </tr>
@@ -678,10 +697,11 @@
         window.exportPaymentsToExcel = function() {
             let selectedInst = document.getElementById('pay-filter-inst').value;
             let selectedGrade = document.getElementById('pay-filter-grade').value;
-            let selectedYear = document.getElementById('pay-filter-year').value;
-            let selectedMonth = document.getElementById('pay-filter-month').value;
+            let startY = document.getElementById('start-year').value;
+            let startM = document.getElementById('start-month').value;
+            let endY = document.getElementById('pay-filter-year').value;
+            let endM = document.getElementById('pay-filter-month').value;
             let defaultFee = parseFloat(document.getElementById('class-fee-input').value) || 800;
-            let targetKey = `${selectedYear}_${selectedMonth}`;
 
             let sortedIds = Object.keys(students).sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
 
@@ -690,10 +710,9 @@
                 let s = students[id];
                 if(s.inst === selectedInst && s.grade === selectedGrade) {
                     let isFree = (s.cardType === 'Free');
-                    let payVal = s.payments ? s.payments[targetKey] : undefined;
-                    let arrears = getStudentArrears(s, selectedYear, selectedMonth, defaultFee);
+                    let arrears = getStudentArrears(s, startY, startM, endY, endM, defaultFee);
                     
-                    let statusStr = isFree ? "Free Card" : (payVal ? "ගෙවා ඇත" : `ගෙවා නැත (අරියස් මාස: ${arrears.count}, මුළු Rs.${arrears.amount})`);
+                    let statusStr = isFree ? "Free Card" : `අරියස් මාස: ${arrears.count}, මුළු Rs.${arrears.amount}`;
                     filteredList.push({
                         id: id, name: s.name, phone: s.phone, grade: s.grade, inst: s.inst, status: statusStr
                     });
@@ -702,15 +721,15 @@
 
             if(filteredList.length === 0) { alert("බාගත කිරීමට ළමුන්ගේ දත්ත නොමැත."); return; }
 
-            let csv = `ID,නම,දුරකථන අංකය,පන්තිය,ආයතනය,මාසය (${selectedMonth} ${selectedYear}),තත්ත්වය හා අරියස්\n`;
+            let csv = `ID,නම,දුරකථන අංකය,පන්තිය,ආයතනය,කාල සීමාව (${startM} ${startY} සිට ${endM} ${endY}),අරියස් විස්තරය\n`;
             filteredList.forEach(item => {
-                csv += `"${item.id}","${item.name}","${item.phone}","${item.grade}","${item.inst}","${selectedMonth} ${selectedYear}","${item.status}"\n`;
+                csv += `"${item.id}","${item.name}","${item.phone}","${item.grade}","${item.inst}","${startM} ${startY} සිට ${endM} ${endY}","${item.status}"\n`;
             });
 
             let blob = new Blob(["\ufeff", csv], { type: 'text/csv;charset=utf-8;' });
             let link = document.createElement("a");
             link.href = URL.createObjectURL(blob);
-            link.download = `Payment_Report_${selectedInst}_${selectedGrade}_${selectedYear}_${selectedMonth}.csv`;
+            link.download = `Payment_Report_${selectedInst}_${selectedGrade}.csv`;
             link.click();
         }
 
