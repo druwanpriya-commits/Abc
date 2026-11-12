@@ -134,8 +134,7 @@
                     <select id="pay-filter-month" onchange="renderPaymentList()">
                         <option value="ජනවාරි">ජනවාරි</option><option value="පෙබරවාරි">පෙබරවාරි</option><option value="මාර්තු">මාර්තු</option>
                         <option value="අප්‍රේල්">අප්‍රේල්</option><option value="මැයි">මැයි</option><option value="ජූනි">ජූනි</option>
-                        <option value="ජූලි">ජූලි</option><option value="අගෝස්තු">අගෝස්තු</option><option value="සැප්තැම්බර්">සැප්තැම්බර්</option>
-                        <option value="ඔක්තෝබර්">ඔක්තෝබර්</option><option value="නොවැම්බර්">නොවැම්බර්</option><option value="දෙසැම්බර්">දෙසැම්බර්</option>
+                        <option value="ජූලි">ජූලි</option><option value="අගෝස්තු">අගෝස්තු</option><option value="සැප්තැම්බර්">සැප්තැම්බර්</option><option value="ඔක්තෝබර්">ඔක්තෝබර්</option><option value="නොවැම්බර්">නොවැම්බර්</option><option value="දෙසැම්බර්">දෙසැම්බර්</option>
                     </select>
                 </div>
             </div>
@@ -269,7 +268,6 @@
         let currentYearVal = new Date().getFullYear().toString();
         let currentMonthVal = monthNamesSinhala[new Date().getMonth()];
 
-        // ස්ථිරවම බීප් හඬ ඇසීම සඳහා ක්‍රමවේදය
         function playBeep() {
             try {
                 const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -282,7 +280,7 @@
                 const gainNode = audioCtx.createGain();
 
                 oscillator.type = 'sine';
-                oscillator.frequency.setValueAtTime(880, audioCtx.currentTime); // A5 note (පැහැදිලි හඬක්)
+                oscillator.frequency.setValueAtTime(880, audioCtx.currentTime);
                 gainNode.gain.setValueAtTime(0.15, audioCtx.currentTime);
 
                 oscillator.connect(gainNode);
@@ -465,7 +463,6 @@
                 return;
             }
 
-            // ස්කෑන් වූ වහාම බීප් ශබ්දය නිකුත් කරයි
             playBeep();
 
             let date = new Date().toLocaleDateString();
@@ -477,7 +474,6 @@
                 attendance.push(attRecord);
                 renderTable();
 
-                // ෂීට් එකට පැමිණීම සටහන් කිරීම (ස්වයංක්‍රීය WhatsApp මැසේජ් යැවීම ඉවත් කර ඇත)
                 await apiCall({ sheet: 'attendance', action: 'add', row: [studentId, std.name, std.grade, std.inst, date, time] });
                 
                 statusBox.innerHTML = `✅ <b style="color:var(--accent);">${std.name}</b> පැමිණියා! (${time})`;
@@ -525,15 +521,26 @@
             if(showPaymentListFlag) renderPaymentList();
         }
 
+        // තෝරාගත් වසර සහ මාසය දක්වා අරියස් ගණනය කිරීමේ නිවැරදි ක්‍රමවේදය
         function getStudentArrears(student, selYear, selMonth, defaultFee) {
             if (student.cardType === 'Free') return { count: 0, amount: 0 };
-            let mIndex = monthNamesSinhala.indexOf(selMonth);
+            
+            let targetYear = parseInt(selYear);
+            let targetMonthIndex = monthNamesSinhala.indexOf(selMonth);
             let unpaidCount = 0;
-            for (let i = 0; i <= mIndex; i++) {
-                let mName = monthNamesSinhala[i];
-                let key = `${selYear}_${mName}`;
-                if (!student.payments || !student.payments[key]) {
-                    unpaidCount++;
+
+            // පරණ වසරවල සිට තෝරාගත් වසරේ අදාළ මාසය දක්වා ලූප් කරමින් පරීක්ෂා කරයි
+            let startYear = 2026; // පද්ධතිය පටන්ගත් හෝ ආරම්භක වසර ලෙස මෙහි දැක්විය හැක
+            
+            // ළමයාගේ ලියාපදිංචි වසර හෝ සිස්ටම් ආරම්භක වසරක සිට වත්මන් තේරීම දක්වා බලමු
+            for (let y = 2026; y <= targetYear; y++) {
+                let maxMonth = (y === targetYear) ? targetMonthIndex : 11;
+                for (let m = 0; m <= maxMonth; m++) {
+                    let mName = monthNamesSinhala[m];
+                    let key = `${y}_${mName}`;
+                    if (!student.payments || !student.payments[key]) {
+                        unpaidCount++;
+                    }
                 }
             }
             return { count: unpaidCount, amount: unpaidCount * defaultFee };
