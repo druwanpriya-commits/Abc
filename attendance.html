@@ -269,22 +269,21 @@
         let currentYearVal = new Date().getFullYear().toString();
         let currentMonthVal = monthNamesSinhala[new Date().getMonth()];
 
-        // Web Audio API බීප් ශබ්දය උත්පාදනය කිරීම සඳහා
         function playBeep() {
             try {
                 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                 const oscillator = audioCtx.createOscillator();
                 const gainNode = audioCtx.createGain();
 
-                oscillator.type = 'sine'; // මෘදු හඬක් සඳහා
-                oscillator.frequency.setValueAtTime(800, audioCtx.currentTime); // ස්වරය (Pitch)
-                gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime); // ශබ්ද ප්‍රමාණය (Volume)
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(800, audioCtx.currentTime);
+                gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
 
                 oscillator.connect(gainNode);
                 gainNode.connect(audioCtx.destination);
 
                 oscillator.start();
-                oscillator.stop(audioCtx.currentTime + 0.15); // තත්පර 0.15 ක ඉතා කෙටි හඬක්
+                oscillator.stop(audioCtx.currentTime + 0.15);
             } catch(e) {
                 console.log("Audio play error:", e);
             }
@@ -456,12 +455,10 @@
             statusBox.style.display = 'block';
 
             if(!std) {
-                // නොදන්නා ID එකක් ස්කෑන් වුණත් පොඩි වෙනස් ශබ්දයක් හෝ වෝනිං එකක් දෙන්න පුළුවන්
                 statusBox.innerHTML = `❌ හඳුනා නොගත් ID අංකයකි: ${studentId}`;
                 return;
             }
 
-            // QR ස්කෑන් වූ වහාම චූටි බීප් ශබ්දය නිකුත් කරයි
             playBeep();
 
             let date = new Date().toLocaleDateString();
@@ -816,7 +813,7 @@
             }
         }
 
-        window.resetStudentForm = functionType = function() {
+        window.resetStudentForm = function() {
             document.getElementById('std-id').value = '';
             document.getElementById('std-name').value = '';
             document.getElementById('std-phone').value = '';
