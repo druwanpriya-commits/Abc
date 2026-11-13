@@ -184,7 +184,7 @@
     <!-- TAB 3: ළමුන් ලියාපදිංචිය & කළමනාකරණය -->
     <div id="pane-std" class="tab-pane">
         <div class="container">
-            <h3 style="margin-top:0;">➕ ළමයා එකතු කිරීම</h3>
+            <h3 id="std-form-title" style="margin-top:0;">➕ ළමයා එකතු කිරීම</h3>
             <div class="filter-grid">
                 <div>
                     <label>ආයතනය:</label>
@@ -208,7 +208,8 @@
                 <option value="Free">නොමිලේ (Free Card)</option>
             </select>
 
-            <button class="btn" onclick="registerAndGenerateQR()">QR සාදන්න</button>
+            <button id="std-submit-btn" class="btn" onclick="registerAndGenerateQR()">QR සාදන්න (ලියාපදිංචි කරන්න)</button>
+            <button id="std-update-btn" class="btn btn-warning" style="display:none;" onclick="updateExistingStudent()">💾 තොරතුරු අප්ඩේට් කරන්න</button>
             <button class="btn btn-secondary" onclick="resetStudentForm()">🔄 අලුත් ළමයෙක්</button>
             
             <div id="qrcode-container" style="text-align:center; display:none; margin-top:10px;">
@@ -237,7 +238,7 @@
             <div id="student-table-wrapper" style="display: none;">
                 <div class="table-responsive">
                     <table>
-                        <thead><tr><th style="width:20%">ID</th><th style="width:55%">නම / කාඩ් වර්ගය</th><th style="width:25%">මකන්න</th></tr></thead>
+                        <thead><tr><th style="width:20%">ID</th><th style="width:40%">නම</th><th style="width:40%">ක්‍රියාමාර්ග</th></tr></thead>
                         <tbody id="student-list-table"></tbody>
                     </table>
                 </div>
@@ -305,7 +306,6 @@
             }
         }
 
-        // SMS URL සැකසීම (Android සහ iOS දෙකටම ගැලපෙන පරිදි)
         function createSmsLink(phone, text) {
             let cleanPhone = String(phone).trim();
             let isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
@@ -456,10 +456,27 @@
             let inst = document.getElementById('std-inst').value;
             let cardType = document.getElementById('std-card-type').value;
             
-            if(!id || !name) { alert("කරුණාකර ID එක සහ නම ඇතුළත් කරන්න."); return; }
+            if(!id || !name) { 
+                alert("කරුණාකර ID එක සහ නම ඇතුළත් කරන්න."); 
+                return; 
+            }
+
+            if(students[id]) {
+                alert(`⚠️ අවවාදයයි: "${id}" යන ID අංකයෙන් දැනටමත් "${students[id].name}" (${students[id].grade} - ${students[id].inst}) ලියාපදිංචි වී ඇත!\n\nකරුණාකර වෙනත් අලුත් ID අංකයක් ලබා දෙන්න.`);
+                return;
+            }
             
             students[id] = { name, phone, grade, inst, payments: {}, cardType };
             
+            generateQRVisual(id, name);
+
+            await apiCall({ sheet: 'students', action: 'add', row: [id, name, phone, grade, inst, JSON.stringify({}), cardType] });
+            renderStudentList();
+            renderPaymentList();
+            alert("✅ ළමයා සාර්ථකව ලියාපදිංචි කර QR කේතය සාදන ලදී!");
+        }
+
+        function generateQRVisual(id, name) {
             let qrContainer = document.getElementById("qrcode");
             qrContainer.innerHTML = "";
             new QRCode(qrContainer, {
@@ -470,11 +487,86 @@
             document.getElementById('qr-student-name').innerText = name;
             document.getElementById('qr-student-id').innerText = "ID: " + id;
             document.getElementById('qrcode-container').style.display = 'block';
+            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        }
 
-            await apiCall({ sheet: 'students', action: 'add', row: [id, name, phone, grade, inst, JSON.stringify({}), cardType] });
+        // ලැයිස්තුවෙන් ඕනෑම ළමයෙකුගේ QR එක නැවත ලබා ගැනීමට (View & Download QR)
+        window.viewStudentQR = function(id) {
+            let s = students[id];
+            if(!s) return;
+
+            // පෝරමයේ ID සහ අනෙකුත් විස්තර තාවකාලිකව දමා QR එක ජෙනරේට් කරයි
+            document.getElementById('std-id').value = id;
+            document.getElementById('std-name').value = s.name;
+            generateQRVisual(id, s.name);
+            alert(`📌 "${s.name}" (ID: ${id}) සඳහා QR කේතය සූදානම් කර ඇත. පහළට ගොස් 'Download QR' මඟින් ලබාගන්න.`);
+        }
+
+        window.editStudent = function(id) {
+            let s = students[id];
+            if(!s) return;
+
+            document.getElementById('std-form-title').innerText = "✏️ ළමයාගේ තොරතුරු වෙනස් කිරීම";
+            document.getElementById('std-inst').value = s.inst;
+            document.getElementById('std-grade').value = s.grade;
+            
+            let idInput = document.getElementById('std-id');
+            idInput.value = id;
+            idInput.disabled = true;
+            idInput.style.opacity = "0.6";
+
+            document.getElementById('std-name').value = s.name;
+            document.getElementById('std-phone').value = s.phone;
+            document.getElementById('std-card-type').value = s.cardType || 'Normal';
+
+            document.getElementById('std-submit-btn').style.display = 'none';
+            document.getElementById('std-update-btn').style.display = 'block';
+
+            generateQRVisual(id, s.name);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        window.updateExistingStudent = async function() {
+            let id = document.getElementById('std-id').value.trim();
+            let name = document.getElementById('std-name').value.trim();
+            let phone = document.getElementById('std-phone').value.trim();
+            let grade = document.getElementById('std-grade').value;
+            let inst = document.getElementById('std-inst').value;
+            let cardType = document.getElementById('std-card-type').value;
+
+            if(!id || !students[id] || !name) {
+                alert("කරුණාකර නිවැරදි තොරතුරු ඇතුළත් කරන්න.");
+                return;
+            }
+
+            let existingPayments = students[id].payments || {};
+            students[id] = { name, phone, grade, inst, payments: existingPayments, cardType };
+
+            generateQRVisual(id, name);
+
+            let jsonStringPayments = JSON.stringify(existingPayments);
+            await apiCall({ sheet: 'students', action: 'update', id: id, row: [id, name, phone, grade, inst, jsonStringPayments, cardType] });
+            
             renderStudentList();
             renderPaymentList();
-            alert("ළමයා සාර්ථකව ලියාපදිංචි කර QR කේතය සාදන ලදී!");
+            alert("✅ ළමයාගේ තොරතුරු සාර්ථකව අප්ඩේට් කරන ලදී!");
+            resetStudentForm();
+        }
+
+        window.resetStudentForm = function() {
+            document.getElementById('std-form-title').innerText = "➕ ළමයා එකතු කිරීම";
+            let idInput = document.getElementById('std-id');
+            idInput.value = '';
+            idInput.disabled = false;
+            idInput.style.opacity = "1";
+
+            document.getElementById('std-name').value = '';
+            document.getElementById('std-phone').value = '';
+            document.getElementById('std-card-type').value = 'Normal';
+            
+            document.getElementById('std-submit-btn').style.display = 'block';
+            document.getElementById('std-update-btn').style.display = 'none';
+            document.getElementById('qrcode-container').style.display = 'none';
         }
 
         window.processAttendance = async function(studentId) {
@@ -669,7 +761,6 @@
                             let btnText = isPaidThisMonth ? '❌ අවලංගු' : '✅ ගෙව්වා මාක්';
                             let btnClass = isPaidThisMonth ? 'btn btn-danger' : 'btn btn-success';
                             
-                            // කාඩ් ගත්ත බව දැනුම් දෙන SMS බොත්තම (ගෙවා ඇති විට පමණක් පෙන්වයි)
                             let smsBtnHtml = '';
                             if (isPaidThisMonth && s.phone) {
                                 let smsMsg = `පන්ති ගාස්තු ගෙවීම් දැනුම්දීමයි: ඔබගේ දරුවා වන ${s.name} (${s.grade}) ${endY} ${endM} මාසය සඳහා පන්ති කාඩ්පත (Rs. ${paidAmt}) ලබා ගන්නා ලදී. ස්තූතියි! - හිතන අයගේ ගණන් පන්තිය`;
@@ -841,10 +932,24 @@
             let inst = instEl.value;
             let grade = gradeEl.value;
 
-            Object.keys(students).forEach(id => {
+            let sortedIds = Object.keys(students).sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
+
+            sortedIds.forEach(id => {
                 if(students[id].inst === inst && students[id].grade === grade) {
                     let badge = students[id].cardType === 'Free' ? ' <span class="badge-free">Free</span>' : '';
-                    tbody.innerHTML += `<tr><td>${id}</td><td>${students[id].name}${badge}</td><td><button class="btn btn-danger" style="padding: 2px 8px;" onclick="deleteStudent('${id}')">🗑️</button></td></tr>`;
+                    tbody.innerHTML += `
+                        <tr>
+                            <td style="font-size:12px;">${id}</td>
+                            <td style="text-align:left; padding-left:4px; font-size:12px;">${students[id].name}${badge}</td>
+                            <td>
+                                <div style="display:flex; gap:2px; justify-content:center;">
+                                    <button class="btn btn-success" style="padding: 2px 4px; width:auto; margin:0; font-size:11px;" title="QR බලන්න" onclick="viewStudentQR('${id}')">🔲</button>
+                                    <button class="btn btn-warning" style="padding: 2px 4px; width:auto; margin:0; font-size:11px;" title="වෙනස් කරන්න" onclick="editStudent('${id}')">✏️</button>
+                                    <button class="btn btn-danger" style="padding: 2px 4px; width:auto; margin:0; font-size:11px;" title="මකන්න" onclick="deleteStudent('${id}')">🗑️</button>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
                 }
             });
         }
@@ -874,14 +979,6 @@
                 renderPaymentList();
                 alert("සාර්ථකව උසස් කරන ලදී!");
             }
-        }
-
-        window.resetStudentForm = function() {
-            document.getElementById('std-id').value = '';
-            document.getElementById('std-name').value = '';
-            document.getElementById('std-phone').value = '';
-            document.getElementById('std-card-type').value = 'Normal';
-            document.getElementById('qrcode-container').style.display = 'none';
         }
 
         window.downloadQR = function() {
