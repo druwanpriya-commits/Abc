@@ -24,6 +24,8 @@
         .btn-warning { background-color: var(--warning); color: #000; }
         .btn-secondary { background-color: #64748b; color: white; }
         .btn-whatsapp { background-color: #25d366; color: white; }
+        .btn-sms { background-color: #3b82f6; color: white; }
+        
         input, select { width: 100%; padding: 10px; margin: 5px 0 10px 0; border-radius: 6px; border: 1px solid #475569; background: #334155; color: white; box-sizing: border-box; }
         .table-responsive { width: 100%; margin-top: 10px; }
         table { width: 100%; table-layout: fixed; border-collapse: collapse; }
@@ -86,7 +88,7 @@
             <button class="btn btn-success" style="margin-bottom:10px;" onclick="exportToExcel()">📥 පැමිණීම් වාර්තාව (.CSV)</button>
             <div class="table-responsive">
                 <table>
-                    <thead><tr><th style="width:45%">නම</th><th style="width:30%">වේලාව</th><th style="width:25%">WhatsApp</th></tr></thead>
+                    <thead><tr><th style="width:40%">නම</th><th style="width:22%">වේලාව</th><th style="width:38%">පණිවිඩය</th></tr></thead>
                     <tbody id="attendance-table"></tbody>
                 </table>
             </div>
@@ -126,10 +128,8 @@
                 <label style="color: var(--accent); font-weight: bold; font-size: 13px;">🟢 ආරම්භක මාසය (From):</label>
                 <div class="filter-grid" style="margin-top: 5px;">
                     <select id="start-year" onchange="renderPaymentList()">
-                        <option value="2024">2024</option><option value="2025">2025</option><option value="2026" selected>2026</option><option value="2027">2027</option><option value="2028">2028</option>
-<option value="2029">2029</option>
-<option value="2030">2030</option>
-
+                        <option value="2024">2024</option><option value="2025">2025</option><option value="2026" selected>2026</option>
+                        <option value="2027">2027</option><option value="2028">2028</option><option value="2029">2029</option><option value="2030">2030</option>
                     </select>
                     <select id="start-month" onchange="renderPaymentList()">
                         <option value="ජනවාරි" selected>ජනවාරි</option><option value="පෙබරවාරි">පෙබරවාරි</option><option value="මාර්තු">මාර්තු</option><option value="අප්‍රේල්">අප්‍රේල්</option><option value="මැයි">මැයි</option><option value="ජූනි">ජූනි</option><option value="ජූලි">ජූලි</option><option value="අගෝස්තු">අගෝස්තු</option><option value="සැප්තැම්බර්">සැප්තැම්බර්</option><option value="ඔක්තෝබර්">ඔක්තෝබර්</option><option value="නොවැම්බර්">නොවැම්බර්</option><option value="දෙසැම්බර්">දෙසැම්බර්</option>
@@ -142,10 +142,8 @@
                 <label style="color: var(--warning); font-weight: bold; font-size: 13px;">🎯 අවසන් මාසය / පරීක්ෂා කරන මාසය (To):</label>
                 <div class="filter-grid" style="margin-top: 5px;">
                     <select id="pay-filter-year" onchange="renderPaymentList()">
-                        <option value="2024">2024</option><option value="2025">2025</option><option value="2026" selected>2026</option><option value="2027">2027</option><option value="2028">2028</option>
-<option value="2029">2029</option>
-<option value="2030">2030</option>
-
+                        <option value="2024">2024</option><option value="2025">2025</option><option value="2026" selected>2026</option>
+                        <option value="2027">2027</option><option value="2028">2028</option><option value="2029">2029</option><option value="2030">2030</option>
                     </select>
                     <select id="pay-filter-month" onchange="renderPaymentList()">
                         <option value="ජනවාරි">ජනවාරි</option><option value="පෙබරවාරි">පෙබරවාරි</option><option value="මාර්තු">මාර්තු</option><option value="අප්‍රේල්">අප්‍රේල්</option><option value="මැයි">මැයි</option><option value="ජූනි">ජූනි</option><option value="ජූලි" selected>ජූලි</option><option value="අගෝස්තු">අගෝස්තු</option><option value="සැප්තැම්බර්">සැප්තැම්බර්</option><option value="ඔක්තෝබර්">ඔක්තෝබර්</option><option value="නොවැම්බර්">නොවැම්බර්</option><option value="දෙසැම්බර්">දෙසැම්බර්</option>
@@ -175,7 +173,7 @@
                 <input type="text" id="pay-search-input" placeholder="🔍 ළමයාගේ නම හෝ ID එක..." onkeyup="renderPaymentList()">
                 <div class="table-responsive">
                     <table>
-                        <thead><tr><th style="width:45%">නම / විස්තරය</th><th style="width:25%">තත්ත්වය</th><th style="width:30%">ගෙවීම්</th></tr></thead>
+                        <thead><tr><th style="width:42%">නම / විස්තරය</th><th style="width:28%">තත්ත්වය</th><th style="width:30%">ගෙවීම් / SMS</th></tr></thead>
                         <tbody id="payment-list-table"></tbody>
                     </table>
                 </div>
@@ -307,6 +305,14 @@
             }
         }
 
+        // SMS URL සැකසීම (Android සහ iOS දෙකටම ගැලපෙන පරිදි)
+        function createSmsLink(phone, text) {
+            let cleanPhone = String(phone).trim();
+            let isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+            let separator = isIOS ? '&' : '?';
+            return `sms:${cleanPhone}${separator}body=${encodeURIComponent(text)}`;
+        }
+
         window.openTab = function(paneId, btnEl) {
             document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -345,8 +351,12 @@
         async function loadAllData() {
             let yEl = document.getElementById('pay-filter-year');
             let mEl = document.getElementById('pay-filter-month');
+            let syEl = document.getElementById('start-year');
+            let smEl = document.getElementById('start-month');
             if(yEl) yEl.value = currentYearVal;
             if(mEl) mEl.value = currentMonthVal;
+            if(syEl) syEl.value = currentYearVal;
+            if(smEl) smEl.value = currentMonthVal;
 
             let instData = await fetchSheetData("institutes");
             if(instData && instData.length > 0) {
@@ -535,7 +545,6 @@
             if(showPaymentListFlag) renderPaymentList();
         }
 
-        // නිශ්චිත ආරම්භක මාසයේ (From) සිට අවසන් මාසය (To) දක්වා කාල පරාසය තුළ අරියස් ගණනය කිරීම
         function getStudentArrears(student, startY, startM, endY, endM, defaultFee) {
             if (student.cardType === 'Free') return { count: 0, amount: 0 };
             
@@ -582,7 +591,7 @@
             let endM = endMEl.value;
             
             let defaultClassFee = parseFloat(feeEl ? feeEl.value : 800) || 800;
-            let targetKey = `${endY}_${endM}`; // මේ මොහොතේ ටොගල් කිරීමට හෝ බැලීමට ගෙන ඇති නිශ්චිත මාසය
+            let targetKey = `${endY}_${endM}`;
 
             let sortedIds = Object.keys(students).sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
 
@@ -653,17 +662,29 @@
                         } else {
                             let arrears = getStudentArrears(s, startY, startM, endY, endM, defaultClassFee);
                             let arrearsBadge = (arrears.count > 0) ? `<br><span class="badge-arrears">අරියස්: මාස ${arrears.count} (Rs. ${arrears.amount})</span>` : '<br><span style="color:var(--accent); font-size:11px;">සියල්ල ගෙවා ඇත</span>';
-                            let paidAmtBadge = (typeof payVal === 'number') ? `<br><span style="color:#38bdf8; font-size:11px;">Rs. ${payVal} (මේ මාසය)</span>` : '';
-                            let statusText = isPaidThisMonth ? `මේ මාසය ගෙවා ඇත ${paidAmtBadge}` : `මේ මාසය ගෙවා නැත`;
+                            let paidAmt = (typeof payVal === 'number') ? payVal : defaultClassFee;
+                            let paidAmtBadge = isPaidThisMonth ? `<br><span style="color:#38bdf8; font-size:11px;">Rs. ${paidAmt}</span>` : '';
+                            let statusText = isPaidThisMonth ? `ගෙවා ඇත ${paidAmtBadge}` : `ගෙවා නැත`;
                             let statusColor = isPaidThisMonth ? "var(--accent)" : "var(--danger)";
                             let btnText = isPaidThisMonth ? '❌ අවලංගු' : '✅ ගෙව්වා මාක්';
                             let btnClass = isPaidThisMonth ? 'btn btn-danger' : 'btn btn-success';
                             
+                            // කාඩ් ගත්ත බව දැනුම් දෙන SMS බොත්තම (ගෙවා ඇති විට පමණක් පෙන්වයි)
+                            let smsBtnHtml = '';
+                            if (isPaidThisMonth && s.phone) {
+                                let smsMsg = `පන්ති ගාස්තු ගෙවීම් දැනුම්දීමයි: ඔබගේ දරුවා වන ${s.name} (${s.grade}) ${endY} ${endM} මාසය සඳහා පන්ති කාඩ්පත (Rs. ${paidAmt}) ලබා ගන්නා ලදී. ස්තූතියි! - හිතන අයගේ ගණන් පන්තිය`;
+                                let smsUrl = createSmsLink(s.phone, smsMsg);
+                                smsBtnHtml = `<br><a href="${smsUrl}" class="btn btn-sms" style="padding:4px 6px; font-size:11px; text-decoration:none; display:inline-block; margin-top:4px; width:auto;">📩 SMS</a>`;
+                            }
+
                             tbody.innerHTML += `
                                 <tr>
                                     <td style="text-align:left; padding-left:8px;"><b>${s.name}</b><br><small style="color:#94a3b8;">ID: ${id}</small>${arrearsBadge}</td>
                                     <td><span style="color:${statusColor}; font-weight:bold;">${statusText}</span></td>
-                                    <td><button class="${btnClass}" style="padding:5px 6px; font-size:11px; width:auto;" onclick="togglePayment('${id}')">${btnText}</button></td>
+                                    <td>
+                                        <button class="${btnClass}" style="padding:5px 6px; font-size:11px; width:auto; margin:0;" onclick="togglePayment('${id}')">${btnText}</button>
+                                        ${smsBtnHtml}
+                                    </td>
                                 </tr>
                             `;
                         }
@@ -746,15 +767,25 @@
             let grade = gradeEl.value;
 
             attendance.slice().reverse().filter(a => a.inst === inst && (grade === "සියල්ල" || a.grade === grade)).forEach(row => {
-                let waBtn = '';
-                if(row.phone) {
-                    let formattedPhone = row.phone.startsWith('0') ? '94' + row.phone.slice(1) : row.phone;
-                    let msg = encodeURIComponent(`පන්ති පැමිණීම් දැනුම්දීමයි: ඔබගේ දරුවා වන ${row.name} අද දින (${row.date}) ${row.time} ට පන්තියට පැමිණියේය. - හිතන අයගේ ගණන් පන්තිය`);
-                    waBtn = `<a href="https://wa.me/${formattedPhone}?text=${msg}" target="_blank" class="btn btn-whatsapp" style="padding:4px 8px; font-size:11px; text-decoration:none; display:inline-block; margin:0;">💬 යවන්න</a>`;
+                let actionBtns = '';
+                let studentPhone = row.phone || (students[row.id] ? students[row.id].phone : '');
+                
+                if(studentPhone) {
+                    let formattedPhone = studentPhone.startsWith('0') ? '94' + studentPhone.slice(1) : studentPhone;
+                    let rawMsg = `පන්ති පැමිණීම් දැනුම්දීමයි: ඔබගේ දරුවා වන ${row.name} අද දින (${row.date}) ${row.time} ට පන්තියට පැමිණියේය. - හිතන අයගේ ගණන් පන්තිය`;
+                    let encodedMsg = encodeURIComponent(rawMsg);
+                    let smsUrl = createSmsLink(studentPhone, rawMsg);
+
+                    actionBtns = `
+                        <div style="display:flex; gap:4px; justify-content:center;">
+                            <a href="https://wa.me/${formattedPhone}?text=${encodedMsg}" target="_blank" class="btn btn-whatsapp" style="padding:4px 6px; font-size:11px; text-decoration:none; margin:0; width:auto;">💬 WA</a>
+                            <a href="${smsUrl}" class="btn btn-sms" style="padding:4px 6px; font-size:11px; text-decoration:none; margin:0; width:auto;">📩 SMS</a>
+                        </div>
+                    `;
                 } else {
-                    waBtn = `<small style="color:#94a3b8;">අංකයක් නැත</small>`;
+                    actionBtns = `<small style="color:#94a3b8;">අංකයක් නැත</small>`;
                 }
-                tbody.innerHTML += `<tr><td>${row.name}</td><td>${row.time}</td><td>${waBtn}</td></tr>`;
+                tbody.innerHTML += `<tr><td>${row.name}</td><td>${row.time}</td><td>${actionBtns}</td></tr>`;
             });
         }
 
